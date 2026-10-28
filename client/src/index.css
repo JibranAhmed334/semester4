@@ -1,0 +1,192 @@
+/* EventSphere Management System - Theme & Global Styles */
+
+:root {
+  --color-navy: #0f223d;
+  --color-navy-light: #162a45;
+  --color-navy-dark: #091527;
+  --color-orange: #f26419;
+  --color-orange-hover: #e05308;
+  --color-orange-subtle: #fff3ec;
+  --color-bg-light: #f8fafc;
+  --color-white: #ffffff;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  color: #1e293b;
+  background-color: var(--color-bg-light);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+#root {
+  width: 100%;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Custom Color Utilities */
+.bg-navy {
+  background-color: var(--color-navy) !important;
+}
+
+.bg-navy-light {
+  background-color: var(--color-navy-light) !important;
+}
+
+.bg-orange {
+  background-color: var(--color-orange) !important;
+}
+
+.bg-orange-subtle {
+  background-color: var(--color-orange-subtle) !important;
+}
+
+.text-navy {
+  color: var(--color-navy) !important;
+}
+
+.text-orange {
+  color: var(--color-orange) !important;
+}
+
+.border-navy {
+  border-color: var(--color-navy) !important;
+}
+
+.border-orange {
+  border-color: var(--color-orange) !important;
+}
+
+/* Custom Buttons */
+.btn-orange {
+  background-color: var(--color-orange);
+  border-color: var(--color-orange);
+  color: #ffffff;
+  font-weight: 500;
+  transition: all 0.2s ease-in-out;
+}
+
+.btn-orange:hover,
+.btn-orange:focus {
+  background-color: var(--color-orange-hover);
+  border-color: var(--color-orange-hover);
+  color: #ffffff;
+}
+
+.btn-outline-navy {
+  color: var(--color-navy);
+  border-color: var(--color-navy);
+  font-weight: 500;
+  transition: all 0.2s ease-in-out;
+}
+
+.btn-outline-navy:hover,
+.btn-outline-navy:focus {
+  background-color: var(--color-navy);
+  color: #ffffff;
+}
+
+.btn-navy {
+  background-color: var(--color-navy);
+  border-color: var(--color-navy);
+  color: #ffffff;
+  font-weight: 500;
+  transition: all 0.2s ease-in-out;
+}
+
+.btn-navy:hover,
+.btn-navy:focus {
+  background-color: var(--color-navy-dark);
+  border-color: var(--color-navy-dark);
+  color: #ffffff;
+}
+
+/* Brand icon box */
+.brand-icon-box {
+  width: 38px;
+  height: 38px;
+  font-size: 1.2rem;
+}
+
+/* Navigation Links */
+.navbar .nav-link {
+  color: rgba(255, 255, 255, 0.8) !important;
+  font-weight: 500;
+  padding: 0.5rem 0.85rem !important;
+  border-radius: 6px;
+  transition: all 0.2s ease-in-out;
+}
+
+.navbar .nav-link:hover {
+  color: #ffffff !important;
+  background-color: rgba(255, 255, 255, 0.08);
+}
+
+.navbar .nav-link.active-link {
+  color: #ffffff !important;
+  background-color: rgba(242, 100, 25, 0.25);
+  border-left: 3px solid var(--color-orange);
+}
+
+@media (min-width: 992px) {
+  .navbar .nav-link.active-link {
+    border-left: none;
+    border-bottom: 2px solid var(--color-orange);
+  }
+}
+
+/* Footer Links */
+.footer-link {
+  color: rgba(255, 255, 255, 0.7);
+  text-decoration: none;
+  transition: color 0.2s ease-in-out;
+}
+
+.footer-link:hover {
+  color: var(--color-orange);
+  text-decoration: underline;
+}
+
+/* Card hover animation */
+.hover-shadow {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.hover-shadow:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 20px rgba(15, 34, 61, 0.1) !important;
+}
+
+.event-card,
+.exhibitor-card {
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.event-card:hover,
+.exhibitor-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 12px 24px rgba(15, 34, 61, 0.12) !important;
+}
+
+/* Hero Section */
+.hero-section {
+  background: linear-gradient(135deg, #091527 0%, #0f223d 50%, #162a45 100%);
+}
+
+/* Utility max widths */
+.max-w-600 {
+  max-width: 600px;
+}
+
+.max-w-700 {
+  max-width: 700px;
+}
+
+.transition {
+  transition: all 0.2s ease-in-out;
+}
