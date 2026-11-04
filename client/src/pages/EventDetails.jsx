@@ -1,16 +1,93 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import axios from 'axios';
 import { sampleExpos } from '../data/sampleData';
+import { mapExpoRecord } from '../data/expoHelpers';
 
 function EventDetails() {
   const { id } = useParams();
+  const [eventData, setEventData] = useState(null);
   const [registered, setRegistered] = useState(false);
+  const [applicationStatus, setApplicationStatus] = useState('');
+  const [applicationLoading, setApplicationLoading] = useState(false);
+  const [applicationError, setApplicationError] = useState('');
+  const [applicationDocuments, setApplicationDocuments] = useState('');
+  const currentUser = (() => {
+    try {
+      return JSON.parse(localStorage.getItem('user') || 'null');
+    } catch {
+      return null;
+    }
+  })();
 
-  // Find expo by ID or default to the first one
-  const event = sampleExpos.find((item) => item.id === id) || sampleExpos[0];
+  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+
+  useEffect(() => {
+    const sample = sampleExpos.find((item) => item.id === id);
+    if (sample) {
+      setEventData(sample);
+      return;
+    }
+
+    axios
+      .get(`${API_URL}/expos/${id}`)
+      .then((res) => {
+        const item = res.data?.expo;
+        if (item) {
+          setEventData({
+            ...mapExpoRecord(item),
+            expectedAttendees: 'To be announced',
+            highlights: [
+              'Industry talks and networking opportunities',
+              'Exhibitor booths and product demonstrations',
+              'Meet organizers and participating businesses'
+            ]
+          });
+        } else {
+          setEventData(sampleExpos[0]);
+        }
+      })
+      .catch(() => {
+        setEventData(sampleExpos[0]);
+      });
+  }, [id, API_URL]);
+
+  const event = eventData || sampleExpos[0];
 
   const handleRegisterModal = () => {
     setRegistered(true);
+  };
+
+  const handleExpoApplication = async () => {
+    const expoId = eventData?._id || eventData?.id;
+    if (!expoId || !/^[a-f\d]{24}$/i.test(expoId)) {
+      setApplicationError('Applications are available for published expos only.');
+      return;
+    }
+
+    setApplicationLoading(true);
+    setApplicationError('');
+    try {
+      const token = localStorage.getItem('token');
+      const documents = applicationDocuments.split(/\r?\n/).map((url) => url.trim()).filter(Boolean).map((url, index) => ({
+        name: `Supporting document ${index + 1}`,
+        url
+      }));
+      const response = await axios.post(`${API_URL}/exhibitors/applications`, { expoId, documents }, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        withCredentials: true
+      });
+      setApplicationStatus(response.data?.application?.status || 'pending');
+    } catch (error) {
+      const message = error.response?.data?.message || 'Your application could not be submitted.';
+      if (message.includes('Complete your company profile')) {
+        setApplicationError(`${message} Open your dashboard to add company details.`);
+      } else {
+        setApplicationError(message);
+      }
+    } finally {
+      setApplicationLoading(false);
+    }
   };
 
   return (
@@ -22,7 +99,7 @@ function EventDetails() {
             <i className="bi bi-arrow-left me-1"></i> Back to Expos
           </Link>
           <div className="d-flex flex-wrap gap-2 mb-2">
-            <span className="badge bg-orange text-white">{event.category}</span>
+            <span className="badge bg-orange text-white text-capitalize">{event.category}</span>
             <span className="badge bg-light text-navy">{event.city}</span>
           </div>
           <h1 className="display-6 fw-bold text-white mb-2">{event.title}</h1>
@@ -53,6 +130,10 @@ function EventDetails() {
                 alt={event.title}
                 className="img-fluid w-100"
                 style={{ maxHeight: '380px', objectFit: 'cover' }}
+                onError={(e) => {
+                  e.target.onerror = null;
+                  e.target.src = 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=800';
+                }}
               />
             </div>
 
@@ -148,6 +229,41 @@ function EventDetails() {
                 <i className="bi bi-shop me-1"></i> Book a Booth Space
               </Link>
 
+              {currentUser?.role === 'exhibitor' && (
+                <div className="mb-3">
+                  {applicationError && <div className="alert alert-danger small py-2" role="alert">{applicationError}</div>}
+                  {applicationStatus ? (
+                    <div className="alert alert-success small py-2 mb-0" role="status">
+                      Application submitted. Current status: <strong>{applicationStatus}</strong>
+                    </div>
+                  ) : (
+                    <>
+                      <label className="form-label small fw-semibold" htmlFor="exhibitor-documents">
+                        Supporting document links (one URL per line)
+                      </label>
+                      <textarea
+                        id="exhibitor-documents"
+                        className="form-control mb-2"
+                        rows="3"
+                        placeholder="https://example.com/company-profile.pdf"
+                        value={applicationDocuments}
+                        onChange={(event) => setApplicationDocuments(event.target.value)}
+                      />
+                      <button
+                        onClick={handleExpoApplication}
+                        disabled={applicationLoading}
+                        className="btn btn-navy text-white w-100 py-2"
+                      >
+                        {applicationLoading ? 'Submitting...' : 'Apply as an Exhibitor'}
+                      </button>
+                    </>
+                  )}
+                  {!applicationStatus && (
+                    <Link to="/dashboard" className="small d-block text-center mt-2">Manage company profile</Link>
+                  )}
+                </div>
+              )}
+
               <div className="border-top pt-3 text-muted small">
                 <div className="d-flex align-items-center gap-2 mb-2">
                   <i className="bi bi-shield-check text-success"></i>
@@ -171,4 +287,3 @@ function EventDetails() {
 }
 
 export default EventDetails;
-

@@ -18,6 +18,18 @@ const exhibitorApplicationSchema = new mongoose.Schema(
             enum: ["pending", "approved", "rejected"],
             default: "pending"
         },
+        documents: [{
+            name: {
+                type: String,
+                required: true,
+                trim: true
+            },
+            url: {
+                type: String,
+                required: true,
+                trim: true
+            }
+        }],
         applicationDate: {
             type: Date,
             default: Date.now
@@ -25,6 +37,8 @@ const exhibitorApplicationSchema = new mongoose.Schema(
     },
     { timestamps: true }
 );
+
+exhibitorApplicationSchema.index({ exhibitor: 1, expo: 1 }, { unique: true });
 
 const ExhibitorApplication = mongoose.models.ExhibitorApplication
     || mongoose.model("ExhibitorApplication", exhibitorApplicationSchema);

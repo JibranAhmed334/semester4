@@ -17,7 +17,6 @@ import Register from './pages/Register';
 import ForgotPassword from './pages/ForgotPassword';
 import Dashboard from './pages/Dashboard';
 
-// Helper component to scroll to top on page route changes
 function ScrollToTop() {
   const { pathname } = useLocation();
 
@@ -28,7 +27,6 @@ function ScrollToTop() {
   return null;
 }
 
-// 404 Not Found Page
 function NotFound() {
   return (
     <div className="container py-5 text-center min-vh-50 d-flex flex-column align-items-center justify-content-center">

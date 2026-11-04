@@ -48,6 +48,7 @@ function Login() {
       if (response.data && response.data.token) {
         localStorage.setItem('token', response.data.token);
         localStorage.setItem('user', JSON.stringify({
+          id: response.data.id,
           name: response.data.name,
           email: response.data.email,
           role: response.data.role
@@ -100,12 +101,10 @@ function Login() {
                 </div>
               )}
 
+              {/* Login Form */}
               <form onSubmit={handleSubmit}>
-                {/* Email */}
                 <div className="mb-3">
-                  <label className="form-label small fw-semibold text-navy">
-                    Email Address <span className="text-danger">*</span>
-                  </label>
+                  <label className="form-label small fw-semibold text-navy">Email Address</label>
                   <div className="input-group">
                     <span className="input-group-text bg-light text-muted">
                       <i className="bi bi-envelope"></i>
@@ -115,20 +114,17 @@ function Login() {
                       name="email"
                       className="form-control"
                       placeholder="name@example.com"
-                      required
                       value={formData.email}
                       onChange={handleChange}
+                      required
                     />
                   </div>
                 </div>
 
-                {/* Password */}
                 <div className="mb-3">
                   <div className="d-flex justify-content-between align-items-center mb-1">
-                    <label className="form-label small fw-semibold text-navy mb-0">
-                      Password <span className="text-danger">*</span>
-                    </label>
-                    <Link to="/forgot-password" className="text-orange small text-decoration-none">
+                    <label className="form-label small fw-semibold text-navy mb-0">Password</label>
+                    <Link to="/forgot-password" className="small text-orange text-decoration-none">
                       Forgot Password?
                     </Link>
                   </div>
@@ -140,19 +136,18 @@ function Login() {
                       type="password"
                       name="password"
                       className="form-control"
-                      placeholder="Enter your password"
-                      required
+                      placeholder="••••••••"
                       value={formData.password}
                       onChange={handleChange}
+                      required
                     />
                   </div>
                 </div>
 
-                {/* Submit button */}
                 <button
                   type="submit"
+                  className="btn btn-navy w-100 py-2 mb-3"
                   disabled={loading}
-                  className="btn btn-navy text-white w-100 py-2 fw-semibold shadow-sm mt-2"
                 >
                   {loading ? (
                     <>
@@ -161,17 +156,20 @@ function Login() {
                     </>
                   ) : (
                     <>
-                      <i className="bi bi-box-arrow-in-right me-1"></i> Sign In
+                      <i className="bi bi-box-arrow-in-right me-2"></i>
+                      Sign In
                     </>
                   )}
                 </button>
               </form>
 
-              <div className="text-center mt-4 pt-2 border-top small text-muted">
-                Don&apos;t have an account yet?{' '}
-                <Link to="/register" className="text-orange fw-bold text-decoration-none">
-                  Register
-                </Link>
+              <div className="text-center border-top pt-3">
+                <p className="text-muted small mb-0">
+                  Don't have an account?{' '}
+                  <Link to="/register" className="text-orange fw-semibold text-decoration-none">
+                    Register here
+                  </Link>
+                </p>
               </div>
             </div>
           </div>

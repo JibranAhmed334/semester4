@@ -2,7 +2,7 @@ import { v2 as cloudinary } from "cloudinary";
 
 const upload_on_cloudinary = async (file_path, folder_name) => {
     if (!file_path) {
-        throw new Error("Product image file is missing.")
+        throw new Error("Expo banner image file is missing.")
     }
 
     const { CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET } = process.env
@@ -19,10 +19,10 @@ const upload_on_cloudinary = async (file_path, folder_name) => {
     try {
         return await cloudinary.uploader.upload(file_path, {
             resource_type: "image",
-            folder: folder_name || "alnoor_products"
+            folder: folder_name || "eventsphere_expos"
         });
     } catch (error) {
-        throw new Error(`Product image upload failed: ${error.message}`, { cause: error })
+        throw new Error(`Expo banner upload failed: ${error.message}`, { cause: error })
     }
 }
 

@@ -15,6 +15,19 @@ const exhibitorSchema = new mongoose.Schema(
             type: String,
             trim: true
         }],
+        description: {
+            type: String,
+            trim: true,
+            maxlength: 2000
+        },
+        category: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "category"
+        },
+        website: {
+            type: String,
+            trim: true
+        },
         logo: {
             type: String,
             trim: true
@@ -37,6 +50,8 @@ const exhibitorSchema = new mongoose.Schema(
     },
     { timestamps: true }
 );
+
+exhibitorSchema.index({ user: 1 }, { unique: true });
 
 const Exhibitor = mongoose.models.Exhibitor || mongoose.model("Exhibitor", exhibitorSchema);
 export default Exhibitor;

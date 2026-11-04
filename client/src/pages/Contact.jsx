@@ -1,22 +1,46 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
+import axios from 'axios';
 
 function Contact() {
   const [formData, setFormData] = useState({
-    name: '',
-    email: '',
     subject: '',
     message: ''
   });
   const [submitted, setSubmitted] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+  const currentUser = (() => {
+    try {
+      return JSON.parse(localStorage.getItem('user') || 'null');
+    } catch {
+      return null;
+    }
+  })();
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
+    setError('');
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!formData.name || !formData.email || !formData.message) return;
-    setSubmitted(true);
+    setLoading(true);
+    setError('');
+
+    try {
+      const token = localStorage.getItem('token');
+      await axios.post(`${API_URL}/feedback`, formData, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        withCredentials: true
+      });
+      setSubmitted(true);
+    } catch (requestError) {
+      setError(requestError.response?.data?.message || 'Your request could not be sent. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -100,20 +124,25 @@ function Contact() {
             <div className="card border-0 shadow-sm rounded-4 p-4 p-md-5 h-100 bg-white">
               <h4 className="fw-bold text-navy mb-3">Send Us a Direct Message</h4>
               <p className="text-muted small mb-4">
-                Fill out the form below and an exhibition coordinator will respond within 24 business hours.
+                Send a support request to our team and track its status from your dashboard.
               </p>
 
-              {submitted ? (
+              {!currentUser ? (
+                <div className="alert alert-info mb-0">
+                  <i className="bi bi-person-lock me-2"></i>
+                  Please <Link to="/login" className="alert-link">sign in</Link> to submit a support request.
+                </div>
+              ) : submitted ? (
                 <div className="alert alert-success p-4 rounded-3 text-center my-auto">
                   <i className="bi bi-check-circle-fill text-success fs-1 mb-2 d-block"></i>
-                  <h5 className="fw-bold">Message Received!</h5>
+                  <h5 className="fw-bold">Support Request Received</h5>
                   <p className="small mb-3">
-                    Thank you, <strong>{formData.name}</strong>. Your message regarding &ldquo;{formData.subject || 'Exhibition Inquiry'}&rdquo; has been sent to our desk.
+                    Your request about &ldquo;{formData.subject}&rdquo; has been sent to the EventSphere team. You can follow its status from your dashboard.
                   </p>
                   <button
                     onClick={() => {
                       setSubmitted(false);
-                      setFormData({ name: '', email: '', subject: '', message: '' });
+                      setFormData({ subject: '', message: '' });
                     }}
                     className="btn btn-outline-success btn-sm"
                   >
@@ -123,39 +152,15 @@ function Contact() {
               ) : (
                 <form onSubmit={handleSubmit}>
                   <div className="row g-3">
-                    <div className="col-md-6">
-                      <label className="form-label small fw-semibold text-navy">Your Full Name *</label>
-                      <input
-                        type="text"
-                        name="name"
-                        className="form-control"
-                        placeholder="John Doe"
-                        required
-                        value={formData.name}
-                        onChange={handleChange}
-                      />
-                    </div>
-
-                    <div className="col-md-6">
-                      <label className="form-label small fw-semibold text-navy">Email Address *</label>
-                      <input
-                        type="email"
-                        name="email"
-                        className="form-control"
-                        placeholder="johndoe@example.com"
-                        required
-                        value={formData.email}
-                        onChange={handleChange}
-                      />
-                    </div>
-
                     <div className="col-12">
-                      <label className="form-label small fw-semibold text-navy">Subject</label>
+                      <label className="form-label small fw-semibold text-navy">Subject *</label>
                       <input
                         type="text"
                         name="subject"
                         className="form-control"
                         placeholder="Booth Booking Inquiry / Speaker Request"
+                        maxLength={120}
+                        required
                         value={formData.subject}
                         onChange={handleChange}
                       />
@@ -169,14 +174,25 @@ function Contact() {
                         className="form-control"
                         placeholder="Describe your requirements or questions in detail..."
                         required
+                        maxLength={3000}
                         value={formData.message}
                         onChange={handleChange}
                       ></textarea>
                     </div>
 
+                    {error && (
+                      <div className="col-12">
+                        <div className="alert alert-danger small mb-0" role="alert">{error}</div>
+                      </div>
+                    )}
+
                     <div className="col-12 mt-4">
-                      <button type="submit" className="btn btn-navy text-white px-4 py-2">
-                        <i className="bi bi-send me-1"></i> Submit Message
+                      <button type="submit" className="btn btn-navy text-white px-4 py-2" disabled={loading}>
+                        {loading ? (
+                          <><span className="spinner-border spinner-border-sm me-2" role="status"></span>Sending...</>
+                        ) : (
+                          <><i className="bi bi-send me-1"></i> Submit Support Request</>
+                        )}
                       </button>
                     </div>
                   </div>
@@ -222,4 +238,3 @@ function Contact() {
 }
 
 export default Contact;
-

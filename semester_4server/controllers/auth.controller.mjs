@@ -96,7 +96,8 @@ const login = asyncHanlder(async(request, response) => {
 
     response.status(200).json({ 
             message: `User login.`, 
-            success: true,
+            success: true, 
+            id: user._id,
             name: user.name, 
             email: user.email,
             role: user.role,
@@ -108,27 +109,31 @@ const login = asyncHanlder(async(request, response) => {
 const forgotPassword = asyncHanlder(async (request, response) => {
     const { email } = request.body
 
-    if (!email) {
-        return response.status(400).json({ message: "Email is required." })
+    if (!email || !email.trim()) {
+        return response.status(400).json({ message: "Email is required.", success: false })
     }
 
     const smtpHost = process.env.SMTP_HOST || "smtp.gmail.com"
-    const smtpPort = Number(process.env.SMTP_PORT || 587)
-    const smtpUser = process.env.SMTP_USER
-    const smtpPassword = process.env.SMTP_PASSWORD
+    const smtpPort = Number(process.env.SMTP_PORT || 465)
+    const smtpUser = process.env.SMTP_USER || process.env.EMAIL_USER || process.env.ADMIN_EMAIL
+    const rawPassword = process.env.SMTP_PASSWORD || process.env.SMTP_PASS || process.env.APP_PASSWORD || process.env.EMAIL_PASS || ""
+    const smtpPassword = rawPassword.replace(/\s+/g, "")
     const fromAddress = process.env.SMTP_FROM || smtpUser
 
-    if (!smtpUser || !smtpPassword || !fromAddress || !Number.isInteger(smtpPort)) {
+    if (!smtpUser || !smtpPassword || !fromAddress) {
         return response.status(503).json({
-            message: "Password reset email is not configured. Add your Gmail address as SMTP_USER and a Google App Password as SMTP_PASSWORD in server/.env, then restart the server. Gmail SMTP defaults to smtp.gmail.com:587."
+            message: "Password reset email is not configured. Add your Gmail address as SMTP_USER and a Google App Password as SMTP_PASSWORD in .env, then restart the server.",
+            success: false
         })
     }
 
     const genericMessage = "If an account matches that email, a password reset code has been sent."
-    const user = await User.findOne({ email: email.trim().toLowerCase() })
+    const normalizedEmail = email.trim().toLowerCase()
+    const user = await User.findOne({ email: normalizedEmail })
 
     if (!user) {
-        return response.status(200).json({ message: genericMessage })
+        console.log(`[forgotPassword] Request for non-existent email: ${normalizedEmail}`)
+        return response.status(200).json({ message: genericMessage, success: true })
     }
 
     const resetToken = randomBytes(32).toString("hex")
@@ -139,52 +144,86 @@ const forgotPassword = asyncHanlder(async (request, response) => {
     user.passwordResetExpires = expiresAt
     await user.save()
 
-    const transporter = nodemailer.createTransport({
-        host: smtpHost,
-        port: smtpPort,
-        secure: process.env.SMTP_SECURE === "true" || smtpPort === 465,
-        auth: { user: smtpUser, pass: smtpPassword }
-    })
+    const isGmail = smtpHost.includes("gmail")
+    const transporter = nodemailer.createTransport(
+        isGmail
+            ? {
+                service: "gmail",
+                auth: {
+                    user: smtpUser,
+                    pass: smtpPassword
+                }
+            }
+            : {
+                host: smtpHost,
+                port: smtpPort,
+                secure: process.env.SMTP_SECURE === "true" || smtpPort === 465,
+                auth: {
+                    user: smtpUser,
+                    pass: smtpPassword
+                }
+            }
+    )
 
     try {
         await transporter.sendMail({
             from: fromAddress,
             to: user.email,
-            subject: "Your Alnoor password reset code",
-            text: `Your Alnoor password reset code is:\n\n${resetToken}\n\nIt expires in 15 minutes. If you did not request this, you can ignore this email.`,
-            html: `<p>Your Alnoor password reset code is:</p><p style="font-size:20px;font-weight:bold;letter-spacing:2px">${resetToken}</p><p>It expires in 15 minutes. If you did not request this, you can ignore this email.</p>`
+            subject: "Your EventSphere Password Reset Code",
+            text: `Your EventSphere password reset code is:\n\n${resetToken}\n\nIt expires in 15 minutes. If you did not request this, you can ignore this email.`,
+            html: `
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 8px; background-color: #ffffff;">
+                    <h2 style="color: #0f172a; margin-top: 0;">Password Reset Request</h2>
+                    <p style="color: #475569; font-size: 15px; line-height: 1.5;">We received a request to reset your EventSphere account password. Use the following code to complete your reset:</p>
+                    <div style="margin: 24px 0; padding: 14px 20px; background-color: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 6px; text-align: center;">
+                        <span style="font-family: monospace; font-size: 18px; font-weight: bold; letter-spacing: 2px; color: #1e293b; word-break: break-all;">${resetToken}</span>
+                    </div>
+                    <p style="color: #64748b; font-size: 13px; line-height: 1.4;">This code is valid for 15 minutes. If you did not request a password reset, you can safely ignore this email.</p>
+                </div>
+            `
         })
+        console.log(`[forgotPassword] Reset code successfully sent to: ${user.email}`)
     } catch (error) {
-        console.error("Password reset email could not be sent:", error.message)
+        console.error("Password reset email could not be sent:", error.message || error)
         user.passwordResetToken = undefined
         user.passwordResetExpires = undefined
         await user.save()
-        return response.status(502).json({ message: "The password reset email could not be sent. Please try again later." })
+        return response.status(502).json({
+            message: "The password reset email could not be sent. Please check SMTP settings or try again later.",
+            error: process.env.NODE_ENV !== "production" ? error.message : undefined,
+            success: false
+        })
     }
 
-    return response.status(200).json({ message: genericMessage })
+    return response.status(200).json({ message: genericMessage, success: true })
 })
 
 const resetPassword = asyncHanlder(async (request, response) => {
     const { email, token, password } = request.body
 
     if (!email || !token || !password) {
-        return response.status(400).json({ message: "Email, reset code, and new password are required." })
+        return response.status(400).json({ message: "Email, reset code, and new password are required.", success: false })
     }
 
     if (password.length < 8) {
-        return response.status(400).json({ message: "Password must be at least 8 characters long." })
+        return response.status(400).json({ message: "Password must be at least 8 characters long.", success: false })
     }
 
-    const hashedToken = createHash("sha256").update(token).digest("hex")
+    const cleanToken = token.trim()
+    const cleanEmail = email.trim().toLowerCase()
+    const hashedToken = createHash("sha256").update(cleanToken).digest("hex")
+
     const user = await User.findOne({
-        email: email.trim().toLowerCase(),
+        email: cleanEmail,
         passwordResetToken: hashedToken,
         passwordResetExpires: { $gt: new Date() }
     }).select("+passwordResetToken +passwordResetExpires")
 
     if (!user) {
-        return response.status(400).json({ message: "The reset code is invalid or has expired. Request a new code and try again." })
+        return response.status(400).json({
+            message: "The reset code is invalid or has expired. Please request a new code and try again.",
+            success: false
+        })
     }
 
     user.password = await bcrypt.hash(password, 12)
@@ -192,7 +231,10 @@ const resetPassword = asyncHanlder(async (request, response) => {
     user.passwordResetExpires = undefined
     await user.save()
 
-    return response.status(200).json({ message: "Password reset successfully. You can now sign in." })
+    return response.status(200).json({
+        message: "Password reset successfully. You can now sign in with your new password.",
+        success: true
+    })
 })
 
 const logout = asyncHanlder(async(request, response) => {

@@ -1,33 +1,85 @@
-import { useState, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
+import axios from 'axios';
 import EventCard from '../components/EventCard';
 import { sampleExpos } from '../data/sampleData';
+import { mapExpoRecord } from '../data/expoHelpers';
 
 function Expos() {
+  const [expos, setExpos] = useState([]);
+  const [categoryList, setCategoryList] = useState(['All']);
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [searchTerm, setSearchTerm] = useState('');
+  const [loading, setLoading] = useState(true);
 
-  const categories = [
-    'All',
-    'Technology & AI',
-    'Healthcare',
-    'Green Energy',
-    'Automotive',
-    'Retail & Fashion',
-    'Manufacturing'
-  ];
+  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+
+  useEffect(() => {
+    fetchExposAndCategories();
+  }, []);
+
+  const fetchExposAndCategories = async () => {
+    setLoading(true);
+    try {
+      const [expoRes, catRes] = await Promise.all([
+        axios.get(`${API_URL}/expos`),
+        axios.get(`${API_URL}/categories`)
+      ]);
+
+      const dbExpos = expoRes.data?.expos || [];
+      const dbCategories = catRes.data?.data || catRes.data?.categories || [];
+
+      if (Array.isArray(dbExpos) && dbExpos.length > 0) {
+        setExpos(dbExpos.map(mapExpoRecord));
+      } else {
+        // Fallback to sample expos if database has no records yet
+        setExpos(sampleExpos);
+      }
+
+      if (Array.isArray(dbCategories) && dbCategories.length > 0) {
+        const catNames = dbCategories.map((c) => c.category_name);
+        setCategoryList(['All', ...catNames]);
+      } else {
+        setCategoryList([
+          'All',
+          'Technology & AI',
+          'Healthcare',
+          'Green Energy',
+          'Automotive',
+          'Retail & Fashion',
+          'Manufacturing'
+        ]);
+      }
+    } catch (err) {
+      console.log('Using sample expos due to API status:', err.message);
+      setExpos(sampleExpos);
+      setCategoryList([
+        'All',
+        'Technology & AI',
+        'Healthcare',
+        'Green Energy',
+        'Automotive',
+        'Retail & Fashion',
+        'Manufacturing'
+      ]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Filter expos based on category and search query
   const filteredExpos = useMemo(() => {
-    return sampleExpos.filter((expo) => {
-      const matchesCategory =
-        selectedCategory === 'All' || expo.category === selectedCategory;
-      const matchesSearch =
-        expo.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        expo.city.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        expo.description.toLowerCase().includes(searchTerm.toLowerCase());
-      return matchesCategory && matchesSearch;
+    return expos.filter((expo) => {
+      const expoCat = (expo.category || '').toLowerCase();
+      const selCat = selectedCategory.toLowerCase();
+      const matchesCategory = selectedCategory === 'All' || expoCat === selCat;
+
+      const titleMatch = (expo.title || '').toLowerCase().includes(searchTerm.toLowerCase());
+      const locationMatch = (expo.location || '').toLowerCase().includes(searchTerm.toLowerCase());
+      const descMatch = (expo.description || '').toLowerCase().includes(searchTerm.toLowerCase());
+
+      return matchesCategory && (titleMatch || locationMatch || descMatch);
     });
-  }, [selectedCategory, searchTerm]);
+  }, [expos, selectedCategory, searchTerm]);
 
   return (
     <div className="expos-page py-5 bg-light min-vh-100">
@@ -74,12 +126,12 @@ function Expos() {
             {/* Category Pills */}
             <div className="col-lg-7">
               <div className="d-flex flex-wrap gap-2 justify-content-lg-end">
-                {categories.map((cat) => (
+                {categoryList.map((cat) => (
                   <button
                     key={cat}
                     onClick={() => setSelectedCategory(cat)}
-                    className={`btn btn-sm rounded-pill px-3 transition ${
-                      selectedCategory === cat
+                    className={`btn btn-sm rounded-pill px-3 transition text-capitalize ${
+                      selectedCategory.toLowerCase() === cat.toLowerCase()
                         ? 'btn-navy shadow-sm'
                         : 'btn-outline-secondary'
                     }`}
@@ -96,7 +148,7 @@ function Expos() {
         <div className="d-flex justify-content-between align-items-center mb-4">
           <p className="text-muted small mb-0">
             Showing <strong className="text-navy">{filteredExpos.length}</strong> of{' '}
-            {sampleExpos.length} exhibitions
+            {expos.length} exhibitions
           </p>
           {(selectedCategory !== 'All' || searchTerm) && (
             <button
@@ -112,10 +164,17 @@ function Expos() {
         </div>
 
         {/* Expos Grid */}
-        {filteredExpos.length > 0 ? (
+        {loading ? (
+          <div className="text-center py-5">
+            <div className="spinner-border text-orange" role="status">
+              <span className="visually-hidden">Loading expos...</span>
+            </div>
+            <p className="text-muted small mt-2">Loading exhibitions...</p>
+          </div>
+        ) : filteredExpos.length > 0 ? (
           <div className="row g-4">
             {filteredExpos.map((expo) => (
-              <div className="col-md-6 col-lg-4" key={expo.id}>
+              <div className="col-md-6 col-lg-4" key={expo.id || expo._id}>
                 <EventCard event={expo} />
               </div>
             ))}
@@ -144,4 +203,3 @@ function Expos() {
 }
 
 export default Expos;
-

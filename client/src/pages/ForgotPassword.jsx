@@ -37,6 +37,7 @@ function ForgotPassword() {
         text: response.data.message || 'If an account matches that email, a password reset code has been sent.'
       });
       setResetData((prev) => ({ ...prev, email: email.trim() }));
+      setActiveTab('reset');
     } catch (err) {
       const serverMessage =
         err.response?.data?.message ||
@@ -148,79 +149,101 @@ function ForgotPassword() {
                       <input
                         type="email"
                         className="form-control"
-                        placeholder="your-email@example.com"
-                        required
+                        placeholder="name@example.com"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
+                        required
                       />
                     </div>
                     <div className="form-text small">
-                      Submits to backend <code>/api/auth/forgot-password</code>.
+                      We'll send a secure 6-character reset code to this address.
                     </div>
                   </div>
 
                   <button
                     type="submit"
+                    className="btn btn-navy w-100 py-2 mb-3"
                     disabled={loading}
-                    className="btn btn-navy text-white w-100 py-2 fw-semibold shadow-sm"
                   >
                     {loading ? (
                       <>
                         <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                        Contacting Server...
+                        Sending Code...
                       </>
                     ) : (
                       <>
-                        <i className="bi bi-send me-1"></i> Send Recovery Request
+                        <i className="bi bi-send me-2"></i>
+                        Send Reset Code
                       </>
                     )}
                   </button>
                 </form>
               )}
 
-              {/* Tab 2: Enter Code & New Password */}
+              {/* Tab 2: Reset Password Form */}
               {activeTab === 'reset' && (
                 <form onSubmit={handleResetSubmit}>
                   <div className="mb-3">
-                    <label className="form-label small fw-semibold text-navy">Email Address</label>
-                    <input
-                      type="email"
-                      className="form-control form-control-sm"
-                      placeholder="your-email@example.com"
-                      required
-                      value={resetData.email}
-                      onChange={(e) => setResetData({ ...resetData, email: e.target.value })}
-                    />
+                    <label className="form-label small fw-semibold text-navy">
+                      Your Registered Email
+                    </label>
+                    <div className="input-group">
+                      <span className="input-group-text bg-light text-muted">
+                        <i className="bi bi-envelope"></i>
+                      </span>
+                      <input
+                        type="email"
+                        className="form-control"
+                        placeholder="name@example.com"
+                        value={resetData.email}
+                        onChange={(e) => setResetData({ ...resetData, email: e.target.value })}
+                        required
+                      />
+                    </div>
                   </div>
 
                   <div className="mb-3">
-                    <label className="form-label small fw-semibold text-navy">Reset Code (Token)</label>
-                    <input
-                      type="text"
-                      className="form-control form-control-sm font-monospace"
-                      placeholder="Enter code received in email"
-                      required
-                      value={resetData.token}
-                      onChange={(e) => setResetData({ ...resetData, token: e.target.value })}
-                    />
+                    <label className="form-label small fw-semibold text-navy">
+                      Reset Code (Received in Email)
+                    </label>
+                    <div className="input-group">
+                      <span className="input-group-text bg-light text-muted">
+                        <i className="bi bi-shield-check"></i>
+                      </span>
+                      <input
+                        type="text"
+                        className="form-control"
+                        placeholder="e.g. A3F89C"
+                        value={resetData.token}
+                        onChange={(e) => setResetData({ ...resetData, token: e.target.value })}
+                        required
+                      />
+                    </div>
                   </div>
 
                   <div className="mb-4">
-                    <label className="form-label small fw-semibold text-navy">New Password</label>
-                    <input
-                      type="password"
-                      className="form-control form-control-sm"
-                      placeholder="Minimum 8 characters"
-                      required
-                      value={resetData.password}
-                      onChange={(e) => setResetData({ ...resetData, password: e.target.value })}
-                    />
+                    <label className="form-label small fw-semibold text-navy">
+                      New Password
+                    </label>
+                    <div className="input-group">
+                      <span className="input-group-text bg-light text-muted">
+                        <i className="bi bi-lock"></i>
+                      </span>
+                      <input
+                        type="password"
+                        className="form-control"
+                        placeholder="Minimum 8 characters"
+                        value={resetData.password}
+                        onChange={(e) => setResetData({ ...resetData, password: e.target.value })}
+                        required
+                      />
+                    </div>
                   </div>
 
                   <button
                     type="submit"
+                    className="btn btn-navy w-100 py-2 mb-3"
                     disabled={loading}
-                    className="btn btn-orange text-white w-100 py-2 fw-semibold shadow-sm"
                   >
                     {loading ? (
                       <>
@@ -229,19 +252,17 @@ function ForgotPassword() {
                       </>
                     ) : (
                       <>
-                        <i className="bi bi-check2-circle me-1"></i> Update Password
+                        <i className="bi bi-check2-circle me-2"></i>
+                        Confirm New Password
                       </>
                     )}
                   </button>
                 </form>
               )}
 
-              <div className="text-center mt-4 pt-3 border-top small">
-                <Link to="/login" className="text-decoration-none text-navy fw-semibold me-3">
-                  <i className="bi bi-arrow-left me-1"></i> Back to Login
-                </Link>
-                <Link to="/register" className="text-decoration-none text-orange fw-semibold">
-                  Create New Account
+              <div className="text-center border-top pt-3">
+                <Link to="/login" className="text-decoration-none text-navy small">
+                  <i className="bi bi-arrow-left me-1"></i> Back to Sign In
                 </Link>
               </div>
             </div>

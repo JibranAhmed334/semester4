@@ -101,92 +101,125 @@ body {
 
 .btn-navy:hover,
 .btn-navy:focus {
-  background-color: var(--color-navy-dark);
-  border-color: var(--color-navy-dark);
+  background-color: var(--color-navy-light);
+  border-color: var(--color-navy-light);
   color: #ffffff;
 }
 
-/* Brand icon box */
-.brand-icon-box {
-  width: 38px;
-  height: 38px;
-  font-size: 1.2rem;
-}
-
-/* Navigation Links */
-.navbar .nav-link {
-  color: rgba(255, 255, 255, 0.8) !important;
+.btn-outline-orange {
+  color: var(--color-orange);
+  border-color: var(--color-orange);
   font-weight: 500;
-  padding: 0.5rem 0.85rem !important;
-  border-radius: 6px;
   transition: all 0.2s ease-in-out;
 }
 
-.navbar .nav-link:hover {
-  color: #ffffff !important;
-  background-color: rgba(255, 255, 255, 0.08);
+.btn-outline-orange:hover,
+.btn-outline-orange:focus {
+  background-color: var(--color-orange);
+  color: #ffffff;
 }
 
-.navbar .nav-link.active-link {
-  color: #ffffff !important;
-  background-color: rgba(242, 100, 25, 0.25);
-  border-left: 3px solid var(--color-orange);
+/* Brand & Icon Box */
+.brand-icon-box {
+  width: 36px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
-@media (min-width: 992px) {
-  .navbar .nav-link.active-link {
-    border-left: none;
-    border-bottom: 2px solid var(--color-orange);
-  }
-}
-
-/* Footer Links */
-.footer-link {
-  color: rgba(255, 255, 255, 0.7);
-  text-decoration: none;
+/* Navbar Links */
+.navbar-nav .nav-link {
+  color: rgba(255, 255, 255, 0.85) !important;
+  font-weight: 500;
+  padding: 0.5rem 0.8rem;
   transition: color 0.2s ease-in-out;
 }
 
-.footer-link:hover {
-  color: var(--color-orange);
-  text-decoration: underline;
+.navbar-nav .nav-link:hover,
+.navbar-nav .nav-link.active,
+.navbar-nav .nav-link.active-link {
+  color: var(--color-orange) !important;
 }
 
-/* Card hover animation */
+/* Hero Section */
+.hero-section {
+  background: linear-gradient(135deg, var(--color-navy-dark) 0%, var(--color-navy) 100%);
+}
+
+.hero-card {
+  border-radius: 1rem;
+}
+
+/* Event & Exhibitor Cards */
+.event-card,
+.exhibitor-card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  border-radius: 0.75rem;
+  overflow: hidden;
+}
+
+.event-card:hover,
+.exhibitor-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.08) !important;
+}
+
+/* Hover & Animation Utilities */
 .hover-shadow {
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .hover-shadow:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 10px 20px rgba(15, 34, 61, 0.1) !important;
+  transform: translateY(-3px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.08);
 }
 
-.event-card,
-.exhibitor-card {
-  transition: transform 0.25s ease, box-shadow 0.25s ease;
-}
-
-.event-card:hover,
-.exhibitor-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 12px 24px rgba(15, 34, 61, 0.12) !important;
-}
-
-/* Hero Section */
-.hero-section {
-  background: linear-gradient(135deg, #091527 0%, #0f223d 50%, #162a45 100%);
-}
-
-/* Utility max widths */
-.max-w-600 {
-  max-width: 600px;
+.transition {
+  transition: all 0.2s ease-in-out;
 }
 
 .max-w-700 {
   max-width: 700px;
 }
 
-.transition {
-  transition: all 0.2s ease-in-out;
+.tracking-wider {
+  letter-spacing: 0.05em;
+}
+
+.min-vh-50 {
+  min-height: 50vh;
+}
+
+/* Footer Link */
+.footer-link {
+  color: #94a3b8;
+  text-decoration: none;
+  transition: color 0.2s ease-in-out;
+}
+
+.footer-link:hover {
+  color: var(--color-orange);
+}
+
+/* Booth Box in Floor Plan */
+.booth-card {
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.booth-card:hover {
+  transform: translateY(-2px);
+}
+
+.floor-plan-details-card {
+  position: sticky;
+  top: 6rem;
+  z-index: 1;
+}
+
+@media (max-width: 991.98px) {
+  .floor-plan-details-card {
+    position: static;
+  }
 }

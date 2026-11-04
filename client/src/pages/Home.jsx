@@ -1,12 +1,33 @@
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import axios from 'axios';
 import EventCard from '../components/EventCard';
 import ExhibitorCard from '../components/ExhibitorCard';
 import { sampleExpos, sampleExhibitors, sampleSchedule } from '../data/sampleData';
+import { mapExpoRecord } from '../data/expoHelpers';
 
 function Home() {
-  const featuredExpos = sampleExpos.slice(0, 3);
+  const [featuredExpos, setFeaturedExpos] = useState(sampleExpos.slice(0, 3));
   const featuredExhibitors = sampleExhibitors.slice(0, 3);
   const previewSchedule = sampleSchedule.slice(0, 3);
+
+  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+
+  useEffect(() => {
+    const loadFeaturedExpos = async () => {
+      try {
+        const res = await axios.get(`${API_URL}/expos`);
+        const list = res.data?.expos || [];
+        if (Array.isArray(list) && list.length > 0) {
+          const mapped = list.slice(0, 3).map(mapExpoRecord);
+          setFeaturedExpos(mapped);
+        }
+      } catch (err) {
+        console.log('Notice: Loaded sample expos:', err.message);
+      }
+    };
+    loadFeaturedExpos();
+  }, [API_URL]);
 
   return (
     <div className="home-page">
@@ -43,27 +64,27 @@ function Home() {
                   </span>
                 </div>
                 <div className="mb-3">
-                  <h6 className="fw-bold text-navy mb-1">Global Tech & AI Summit 2026</h6>
-                  <p className="text-muted small mb-2">Nov 15-18, 2026 • New York City</p>
+                  <h6 className="fw-bold text-navy mb-1">{featuredExpos[0]?.title || 'Global Tech & AI Summit 2026'}</h6>
+                  <p className="text-muted small mb-2">{featuredExpos[0]?.date || 'Nov 15-18, 2026'}</p>
                   <div className="progress" style={{ height: '8px' }}>
                     <div className="progress-bar bg-orange" style={{ width: '78%' }}></div>
                   </div>
                   <div className="d-flex justify-content-between small text-muted mt-1">
                     <span>Booths Reserved: 78%</span>
-                    <span>120 Total</span>
+                    <span>{featuredExpos[0]?.boothCount || 120} Total</span>
                   </div>
                 </div>
                 <div className="bg-light p-3 rounded-3 mb-3">
                   <div className="d-flex align-items-center gap-2 mb-2">
                     <i className="bi bi-geo-alt-fill text-orange"></i>
-                    <span className="small fw-semibold">Metropolitan Convention Center</span>
+                    <span className="small fw-semibold">{featuredExpos[0]?.location || 'Metropolitan Convention Center'}</span>
                   </div>
                   <div className="d-flex align-items-center gap-2">
                     <i className="bi bi-people-fill text-primary"></i>
                     <span className="small text-muted">15,000+ Pre-registered Visitors</span>
                   </div>
                 </div>
-                <Link to="/expos/expo-1" className="btn btn-navy w-100">
+                <Link to="/expos" className="btn btn-navy w-100">
                   View Spotlight Event
                 </Link>
               </div>
@@ -111,7 +132,7 @@ function Home() {
 
           <div className="row g-4">
             {featuredExpos.map((expo) => (
-              <div className="col-md-6 col-lg-4" key={expo.id}>
+              <div className="col-md-6 col-lg-4" key={expo.id || expo._id}>
                 <EventCard event={expo} />
               </div>
             ))}
@@ -198,57 +219,37 @@ function Home() {
         <div className="container py-3">
           <div className="row g-5 align-items-center">
             <div className="col-lg-5">
-              <span className="text-orange fw-bold text-uppercase small">Agenda Overview</span>
-              <h2 className="fw-bold text-navy mb-3">Live Event Schedule & Sessions</h2>
+              <span className="text-orange fw-bold text-uppercase small">Conference Tracks</span>
+              <h2 className="fw-bold text-navy mb-3">Dynamic Keynotes & Technical Workshops</h2>
               <p className="text-muted mb-4">
-                Discover keynote speeches, workshops, and networking events designed to elevate your professional knowledge and connections.
+                From visionary keynotes to in-depth technical sessions, plan your attendance with real-time updates and agenda bookmarking.
               </p>
-              <Link to="/schedule" className="btn btn-navy px-4">
-                View Full 3-Day Schedule <i className="bi bi-arrow-right ms-1"></i>
+              <Link to="/schedule" className="btn btn-navy">
+                <i className="bi bi-calendar3 me-1"></i> View Full Event Schedule
               </Link>
             </div>
 
             <div className="col-lg-7">
-              <div className="d-flex flex-column gap-3">
-                {previewSchedule.map((session) => (
-                  <div key={session.id} className="p-3 border rounded-3 bg-light d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-3">
-                    <div>
-                      <div className="d-flex align-items-center gap-2 mb-1">
-                        <span className="badge bg-navy">{session.day}</span>
-                        <span className="badge bg-orange text-white">{session.type}</span>
-                        <span className="small text-muted">{session.time}</span>
+              <div className="card border-0 shadow-sm rounded-4 p-4 bg-light">
+                <h5 className="fw-bold text-navy mb-4">Upcoming Session Highlights</h5>
+                <div className="d-flex flex-column gap-3">
+                  {previewSchedule.map((session) => (
+                    <div key={session.id} className="p-3 bg-white rounded-3 border-start border-4 border-orange shadow-sm">
+                      <div className="d-flex justify-content-between align-items-center mb-1">
+                        <span className="badge bg-light text-navy border small">{session.category}</span>
+                        <span className="small text-muted fw-semibold">
+                          <i className="bi bi-clock me-1"></i>{session.time}
+                        </span>
                       </div>
-                      <h6 className="fw-bold text-navy mb-1">{session.topic}</h6>
+                      <h6 className="fw-bold text-navy mb-1">{session.title}</h6>
                       <div className="small text-secondary">
-                        <i className="bi bi-mic me-1"></i> {session.speaker}
+                        <i className="bi bi-person me-1"></i>{session.speaker} ({session.role})
                       </div>
                     </div>
-                    <div className="text-sm-end text-muted small">
-                      <i className="bi bi-geo-alt me-1 text-danger"></i>
-                      <span>{session.room}</span>
-                    </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
             </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Call to action */}
-      <section className="py-5 bg-navy text-white text-center">
-        <div className="container py-4">
-          <h2 className="fw-bold mb-3 text-white">Ready to Join the Next Big Trade Show?</h2>
-          <p className="lead text-light text-opacity-75 mb-4 max-w-600 mx-auto">
-            Create your account today as an Attendee or Exhibitor to manage your event participation.
-          </p>
-          <div className="d-flex justify-content-center gap-3 flex-wrap">
-            <Link to="/register" className="btn btn-orange btn-lg text-white px-4">
-              Get Started Now
-            </Link>
-            <Link to="/contact" className="btn btn-outline-light btn-lg px-4">
-              Contact Organizing Team
-            </Link>
           </div>
         </div>
       </section>
@@ -257,4 +258,3 @@ function Home() {
 }
 
 export default Home;
-

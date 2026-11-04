@@ -4,7 +4,7 @@ import { sampleBooths } from '../data/sampleData';
 function FloorPlan() {
   const [selectedHall, setSelectedHall] = useState('All');
   const [selectedStatus, setSelectedStatus] = useState('All');
-  const [activeBooth, setActiveBooth] = useState(null);
+  const [activeBooth, setActiveBooth] = useState(sampleBooths[0] || null);
   const [reservationNotice, setReservationNotice] = useState('');
 
   const halls = ['All', 'Hall A', 'Hall B', 'Hall C'];
@@ -49,7 +49,9 @@ function FloorPlan() {
 
   const handleReserveAction = () => {
     if (activeBooth) {
-      setReservationNotice(`Your inquiry for Booth ${activeBooth.id} (${activeBooth.size}) has been recorded! Our exhibition team will contact you.`);
+      setReservationNotice(
+        `Your inquiry for Booth ${activeBooth.id} (${activeBooth.size}, ${activeBooth.hall}) has been recorded! Our exhibition team will contact you.`
+      );
     }
   };
 
@@ -118,41 +120,45 @@ function FloorPlan() {
         )}
 
         <div className="row g-4">
-          {/* Booth Grid */}
+          {/* Booths Grid */}
           <div className="col-lg-8">
-            <div className="card border-0 shadow-sm rounded-4 p-4">
-              <div className="d-flex justify-content-between align-items-center border-bottom pb-3 mb-4">
+            <div className="bg-white p-4 rounded-4 shadow-sm">
+              <div className="d-flex justify-content-between align-items-center mb-3">
                 <h5 className="fw-bold text-navy mb-0">
-                  <i className="bi bi-grid-3x3-gap-fill text-orange me-2"></i>
-                  Floor Grid ({selectedHall})
+                  {selectedHall === 'All' ? 'All Exhibition Halls' : selectedHall}
                 </h5>
-                <span className="small text-muted">Click any booth to view specs</span>
+                <span className="text-muted small">
+                  Showing {filteredBooths.length} booths
+                </span>
               </div>
 
-              {/* Grid of booths */}
               <div className="row g-3">
                 {filteredBooths.map((booth) => {
-                  const isSelected = activeBooth && activeBooth.id === booth.id;
+                  const isSelected = activeBooth?.id === booth.id;
                   return (
-                    <div className="col-sm-6 col-md-4" key={booth.id}>
+                    <div key={booth.id} className="col-sm-6 col-md-4">
                       <div
                         onClick={() => handleSelectBooth(booth)}
-                        className={`p-3 rounded-3 border-2 border ${getStatusBorder(booth.status)} ${
-                          isSelected ? 'shadow bg-light ring' : 'bg-white'
-                        } cursor-pointer transition h-100 text-center`}
-                        style={{ cursor: 'pointer', outline: isSelected ? '2px solid #0f223d' : 'none' }}
+                        className={`card h-100 p-3 booth-card border-2 ${getStatusBorder(booth.status)} ${
+                          isSelected ? 'shadow border-primary' : 'shadow-sm'
+                        }`}
+                        style={{ cursor: 'pointer' }}
                       >
-                        <div className="d-flex justify-content-between align-items-center mb-2">
-                          <span className="fw-bold text-navy fs-5">{booth.id}</span>
+                        <div className="d-flex justify-content-between align-items-start mb-2">
+                          <h6 className="fw-bold text-navy mb-0">Booth {booth.id}</h6>
                           <span className={`badge ${getStatusBadge(booth.status)}`}>
                             {booth.status}
                           </span>
                         </div>
-                        <div className="text-muted small mb-1">{booth.size}</div>
-                        <div className="fw-semibold text-orange small">{booth.price}</div>
+                        <p className="text-muted small mb-1">
+                          <i className="bi bi-aspect-ratio me-1"></i> {booth.size}
+                        </p>
+                        <p className="text-secondary small mb-2">
+                          <i className="bi bi-geo-alt me-1"></i> {booth.hall}
+                        </p>
                         {booth.exhibitor && (
-                          <div className="text-truncate text-secondary small mt-2 border-top pt-1">
-                            {booth.exhibitor}
+                          <div className="small text-truncate text-primary fw-semibold">
+                            <i className="bi bi-building me-1"></i> {booth.exhibitor}
                           </div>
                         )}
                       </div>
@@ -160,91 +166,69 @@ function FloorPlan() {
                   );
                 })}
               </div>
-
-              {filteredBooths.length === 0 && (
-                <div className="text-center py-5 text-muted">
-                  No booths match the selected criteria.
-                </div>
-              )}
             </div>
           </div>
 
-          {/* Booth Details Sidebar */}
-          <div className="col-lg-4">
-            <div className="card border-0 shadow-sm rounded-4 p-4 sticky-top" style={{ top: '80px' }}>
-              <h5 className="fw-bold text-navy mb-3">Booth Specifications</h5>
+          {/* Active Booth Details Panel */}
+          <div className="col-lg-4 align-self-start">
+            {activeBooth ? (
+              <div className="card border-0 shadow-sm rounded-4 p-4 floor-plan-details-card">
+                <span className="badge bg-orange text-white text-uppercase px-2 py-1 mb-2 d-inline-block" style={{ width: 'fit-content' }}>
+                  Booth Inspection
+                </span>
+                <h4 className="fw-bold text-navy mb-1">Booth #{activeBooth.id}</h4>
+                <p className="text-muted small mb-3">
+                  Located in <strong className="text-navy">{activeBooth.hall}</strong>
+                </p>
 
-              {activeBooth ? (
-                <div>
-                  <div className="d-flex justify-content-between align-items-center bg-light p-3 rounded-3 mb-3">
-                    <div>
-                      <span className="text-muted small">Booth Number</span>
-                      <h4 className="fw-bold text-navy mb-0">{activeBooth.id}</h4>
-                    </div>
-                    <span className={`badge ${getStatusBadge(activeBooth.status)} p-2`}>
+                <div className="bg-light p-3 rounded-3 mb-3">
+                  <div className="d-flex justify-content-between mb-2 small">
+                    <span className="text-muted">Status:</span>
+                    <span className={`badge ${getStatusBadge(activeBooth.status)}`}>
                       {activeBooth.status}
                     </span>
                   </div>
-
-                  <table className="table table-sm table-borderless small mb-4">
-                    <tbody>
-                      <tr>
-                        <td className="text-muted">Exhibition Hall:</td>
-                        <td className="fw-semibold text-navy text-end">{activeBooth.hall}</td>
-                      </tr>
-                      <tr>
-                        <td className="text-muted">Stall Dimensions:</td>
-                        <td className="fw-semibold text-navy text-end">{activeBooth.size}</td>
-                      </tr>
-                      <tr>
-                        <td className="text-muted">Standard Rate:</td>
-                        <td className="fw-bold text-orange text-end">{activeBooth.price}</td>
-                      </tr>
-                      <tr>
-                        <td className="text-muted">Sector / Category:</td>
-                        <td className="fw-semibold text-navy text-end">{activeBooth.category}</td>
-                      </tr>
-                      <tr>
-                        <td className="text-muted">Current Occupant:</td>
-                        <td className="fw-semibold text-navy text-end">
-                          {activeBooth.exhibitor || 'Vacant / Unallocated'}
-                        </td>
-                      </tr>
-                    </tbody>
-                  </table>
-
-                  {activeBooth.status === 'Available' ? (
-                    <button
-                      onClick={handleReserveAction}
-                      className="btn btn-orange text-white w-100 py-2 shadow-sm"
-                    >
-                      <i className="bi bi-bookmark-check me-1"></i> Request This Stall
-                    </button>
-                  ) : (
-                    <button className="btn btn-secondary w-100 py-2" disabled>
-                      {activeBooth.status === 'Booked' ? 'Stall Occupied' : 'Pending Reservation'}
-                    </button>
+                  <div className="d-flex justify-content-between mb-2 small">
+                    <span className="text-muted">Dimensions:</span>
+                    <span className="fw-semibold text-navy">{activeBooth.size}</span>
+                  </div>
+                  <div className="d-flex justify-content-between mb-2 small">
+                    <span className="text-muted">Base Rate:</span>
+                    <span className="fw-semibold text-orange">${activeBooth.price?.toLocaleString()}</span>
+                  </div>
+                  {activeBooth.exhibitor && (
+                    <div className="d-flex justify-content-between small">
+                      <span className="text-muted">Occupied By:</span>
+                      <span className="fw-semibold text-navy text-truncate" style={{ maxWidth: '140px' }}>
+                        {activeBooth.exhibitor}
+                      </span>
+                    </div>
                   )}
                 </div>
-              ) : (
-                <div className="text-center py-5 text-muted">
-                  <i className="bi bi-hand-index fs-1 text-orange mb-2 d-block"></i>
-                  <p className="small mb-0">
-                    Click on any booth in the layout grid to inspect its dimensions, pricing, and availability.
-                  </p>
-                </div>
-              )}
 
-              <div className="border-top pt-3 mt-4 small text-muted">
-                <p className="fw-semibold text-navy mb-1">Standard Booth Inclusions:</p>
-                <ul className="ps-3 mb-0">
-                  <li>2x standard 220V electric sockets</li>
-                  <li>Front counter with 2 folding chairs</li>
-                  <li>Company fascia board signage</li>
-                  <li>Daily waste removal & security</li>
-                </ul>
+                {activeBooth.status === 'Available' ? (
+                  <button
+                    onClick={handleReserveAction}
+                    className="btn btn-orange text-white w-100 py-2 mb-2"
+                  >
+                    <i className="bi bi-bookmark-plus me-1"></i> Reserve This Stall
+                  </button>
+                ) : (
+                  <button disabled className="btn btn-secondary w-100 py-2 mb-2 opacity-50">
+                    <i className="bi bi-lock-fill me-1"></i> Stall Not Available
+                  </button>
+                )}
+
+                <p className="text-muted small mb-0 text-center">
+                  Standard setup includes backdrop, spotlighting, and electrical outlet.
+                </p>
               </div>
-            </div>
+            ) : (
+              <div className="card border-0 shadow-sm rounded-4 p-4 text-center text-muted">
+                <i className="bi bi-hand-index-thumb fs-1 mb-2"></i>
+                <p className="mb-0">Select any booth on the floor plan to view details</p>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -253,4 +237,3 @@ function FloorPlan() {
 }
 
 export default FloorPlan;
-
