@@ -223,3 +223,48 @@ body {
     position: static;
   }
 }
+
+/* Architectural Floor Plan Styles */
+.wayfinding-banner {
+  background-color: #e9ecef;
+  color: #495057;
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  font-weight: 700;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  text-align: center;
+}
+
+.booth-cell-card {
+  cursor: pointer;
+  border-radius: 0.75rem;
+  transition: all 0.2s ease-in-out;
+  border-width: 2px !important;
+}
+
+.booth-cell-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 16px rgba(15, 34, 61, 0.08) !important;
+}
+
+.booth-cell-selected {
+  outline: 3px solid var(--color-orange);
+  outline-offset: 2px;
+}
+
+.badge-occupied {
+  background-color: var(--color-navy) !important;
+  color: #ffffff !important;
+}
+
+.badge-reserved {
+  background-color: var(--color-orange) !important;
+  color: #ffffff !important;
+}
+
+.badge-available {
+  background-color: #198754 !important;
+  color: #ffffff !important;
+}
+

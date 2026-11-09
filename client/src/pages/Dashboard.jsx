@@ -60,6 +60,15 @@ function Dashboard() {
   const [applicationsLoading, setApplicationsLoading] = useState(false);
   const [applicationNotice, setApplicationNotice] = useState(null);
 
+  // Exhibitor Reserved Stalls State
+  const [myBooths, setMyBooths] = useState([]);
+  const [myBoothsLoading, setMyBoothsLoading] = useState(false);
+  const [editingBooth, setEditingBooth] = useState(null);
+  const [boothModalOpen, setBoothModalOpen] = useState(false);
+  const [boothEditForm, setBoothEditForm] = useState({ showcaseDetails: '', staffInfo: '' });
+  const [boothEditSaving, setBoothEditSaving] = useState(false);
+  const [boothNotice, setBoothNotice] = useState(null);
+
   const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
   const canManageExpos = currentUser?.role === 'admin' || currentUser?.role === 'organizer';
   const canManageFeedback = canManageExpos;
@@ -84,6 +93,9 @@ function Dashboard() {
     if (activeTab === 'expos' || activeTab === 'overview') {
       fetchExpos();
       fetchCategories();
+    }
+    if (activeTab === 'my-booths' || activeTab === 'overview' || activeTab === 'bookings') {
+      fetchMyBooths();
     }
   }, [activeTab]);
 
@@ -232,7 +244,6 @@ function Dashboard() {
       },
       withCredentials: true
     };
-
   };
 
   const handleSendMessage = async (event) => {
@@ -330,6 +341,58 @@ function Dashboard() {
       setCategories(Array.isArray(catList) ? catList : []);
     } catch (err) {
       console.log('Notice: Failed to fetch categories:', err.message);
+    }
+  };
+
+  const fetchMyBooths = async () => {
+    setMyBoothsLoading(true);
+    try {
+      const response = await axios.get(`${API_URL}/booths/my`, getAuthConfig());
+      setMyBooths(response.data?.booths || []);
+    } catch (err) {
+      console.log('Notice: Could not load reserved booths:', err.message);
+    } finally {
+      setMyBoothsLoading(false);
+    }
+  };
+
+  const handleOpenBoothModal = (booth) => {
+    setEditingBooth(booth);
+    setBoothEditForm({
+      showcaseDetails: booth.showcaseDetails || '',
+      staffInfo: booth.staffInfo || ''
+    });
+    setBoothNotice(null);
+    setBoothModalOpen(true);
+  };
+
+  const handleSaveBoothDetails = async (e) => {
+    e.preventDefault();
+    if (!editingBooth) return;
+    setBoothEditSaving(true);
+    setBoothNotice(null);
+
+    try {
+      const response = await axios.put(
+        `${API_URL}/booths/${editingBooth._id}`,
+        boothEditForm,
+        getAuthConfig()
+      );
+      const updated = response.data?.booth;
+      if (updated) {
+        setMyBooths((prev) => prev.map((b) => (b._id === updated._id ? updated : b)));
+      }
+      setBoothNotice({ type: 'success', text: 'Stall showcase and staff details saved successfully!' });
+      setTimeout(() => {
+        setBoothModalOpen(false);
+      }, 700);
+    } catch (err) {
+      setBoothNotice({
+        type: 'danger',
+        text: err.response?.data?.message || 'Could not update stall details.'
+      });
+    } finally {
+      setBoothEditSaving(false);
     }
   };
 
@@ -517,14 +580,16 @@ function Dashboard() {
                 >
                   <i className="bi bi-speedometer2 me-2"></i> Overview
                 </button>
-                {canManageExpos && <button
-                  className={`nav-link text-start rounded-3 py-2 px-3 fw-medium ${
-                    activeTab === 'expos' ? 'bg-navy text-white' : 'text-secondary btn-link text-decoration-none'
-                  }`}
-                  onClick={() => setActiveTab('expos')}
-                >
-                  <i className="bi bi-calendar-event me-2"></i> Expo Management ({expos.length})
-                </button>}
+                {canManageExpos && (
+                  <button
+                    className={`nav-link text-start rounded-3 py-2 px-3 fw-medium ${
+                      activeTab === 'expos' ? 'bg-navy text-white' : 'text-secondary btn-link text-decoration-none'
+                    }`}
+                    onClick={() => setActiveTab('expos')}
+                  >
+                    <i className="bi bi-calendar-event me-2"></i> Expo Management ({expos.length})
+                  </button>
+                )}
                 {currentUser?.role === 'exhibitor' && (
                   <button
                     className={`nav-link text-start rounded-3 py-2 px-3 fw-medium ${
@@ -533,6 +598,16 @@ function Dashboard() {
                     onClick={() => setActiveTab('exhibitor-profile')}
                   >
                     <i className="bi bi-building me-2"></i> Company Profile
+                  </button>
+                )}
+                {currentUser?.role === 'exhibitor' && (
+                  <button
+                    className={`nav-link text-start rounded-3 py-2 px-3 fw-medium ${
+                      activeTab === 'my-booths' ? 'bg-navy text-white' : 'text-secondary btn-link text-decoration-none'
+                    }`}
+                    onClick={() => setActiveTab('my-booths')}
+                  >
+                    <i className="bi bi-grid-3x3-gap me-2"></i> My Reserved Stalls ({myBooths.length})
                   </button>
                 )}
                 {(currentUser?.role === 'exhibitor' || canManageExpos) && (
@@ -621,7 +696,7 @@ function Dashboard() {
                   <div className="col-sm-6 col-md-3">
                     <div className="card border-0 shadow-sm rounded-4 p-3 bg-white text-center">
                       <div className="fs-3 fw-bold text-success mb-1">
-                        {sampleDashboardStats.reservedBooths}
+                        {currentUser?.role === 'exhibitor' ? myBooths.length : sampleDashboardStats.reservedBooths}
                       </div>
                       <div className="text-muted small">Reserved Stalls</div>
                     </div>
@@ -635,6 +710,39 @@ function Dashboard() {
                     </div>
                   </div>
                 </div>
+
+                {/* Exhibitor Quick Stalls Snapshot if any reserved */}
+                {currentUser?.role === 'exhibitor' && myBooths.length > 0 && (
+                  <div className="card border-0 shadow-sm rounded-4 p-4 bg-white mb-4">
+                    <div className="d-flex justify-content-between align-items-center mb-3">
+                      <div>
+                        <h5 className="fw-bold text-navy mb-1">My Reserved Stalls Snapshot</h5>
+                        <p className="text-muted small mb-0">Active booth space bookings registered under your brand.</p>
+                      </div>
+                      <button onClick={() => setActiveTab('my-booths')} className="btn btn-outline-navy btn-sm">
+                        Manage All Stalls ({myBooths.length})
+                      </button>
+                    </div>
+                    <div className="row g-3">
+                      {myBooths.slice(0, 2).map((b) => (
+                        <div key={b._id} className="col-md-6">
+                          <div className="p-3 border rounded-3 bg-light">
+                            <div className="d-flex justify-content-between align-items-center mb-1">
+                              <span className="fw-bold text-navy">Booth #{b.boothNumber}</span>
+                              <span className="badge bg-navy text-white">{b.hall || 'Hall A'}</span>
+                            </div>
+                            <div className="text-muted small mb-2">
+                              {b.expo?.title || 'Expo Event'} • <span className="text-orange fw-semibold">${b.price || 1200}</span>
+                            </div>
+                            <div className="text-secondary small text-truncate">
+                              Showcase: {b.showcaseDetails || 'No details added yet'}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
                 {/* Recent Expos Preview */}
                 <div className="card border-0 shadow-sm rounded-4 p-4 bg-white mb-4">
@@ -794,6 +902,7 @@ function Dashboard() {
               </div>
             )}
 
+            {/* Exhibitor Profile Tab */}
             {activeTab === 'exhibitor-profile' && currentUser?.role === 'exhibitor' && (
               <div className="card border-0 shadow-sm rounded-4 p-4 bg-white">
                 <div className="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
@@ -875,6 +984,135 @@ function Dashboard() {
               </div>
             )}
 
+            {/* Exhibitor Stalls Management Tab */}
+            {activeTab === 'my-booths' && currentUser?.role === 'exhibitor' && (
+              <div className="card border-0 shadow-sm rounded-4 p-4 bg-white">
+                <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+                  <div>
+                    <h4 className="fw-bold text-navy mb-1">My Reserved Stalls & Booths</h4>
+                    <p className="text-muted small mb-0">
+                      Manage your exhibition stall footprint, showcase offerings, and on-site staff contacts.
+                    </p>
+                  </div>
+                  <Link to="/floor-plan" className="btn btn-orange text-white btn-sm px-3">
+                    <i className="bi bi-grid-3x3-gap me-1"></i> Interactive Floor Plan
+                  </Link>
+                </div>
+
+                {myBoothsLoading ? (
+                  <div className="text-center py-5">
+                    <div className="spinner-border text-orange" role="status"></div>
+                    <p className="text-muted small mt-2">Loading your reserved stalls...</p>
+                  </div>
+                ) : myBooths.length > 0 ? (
+                  <div className="row g-3">
+                    {myBooths.map((booth) => (
+                      <div key={booth._id} className="col-12">
+                        <div className="border rounded-4 p-3 p-md-4 bg-light shadow-sm">
+                          <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-start gap-2 mb-3">
+                            <div>
+                              <div className="d-flex align-items-center gap-2 mb-1">
+                                <span className="badge bg-navy text-white text-uppercase px-2 py-1">
+                                  {booth.hall || 'Hall A'}
+                                </span>
+                                <span className={`badge ${booth.status === 'occupied' ? 'bg-navy' : 'bg-warning text-dark'} text-uppercase`}>
+                                  {booth.status}
+                                </span>
+                              </div>
+                              <h5 className="fw-bold text-navy mb-0">
+                                Booth #{booth.boothNumber}
+                              </h5>
+                              <span className="text-muted small">
+                                <i className="bi bi-geo-alt me-1 text-danger"></i>{booth.location}
+                              </span>
+                            </div>
+
+                            <div className="text-md-end">
+                              <div className="small text-muted">Exhibition Tariff:</div>
+                              <div className="fs-5 fw-bold text-orange">
+                                ${Number(booth.price || 1200).toLocaleString()}
+                              </div>
+                              <span className="badge bg-light text-navy border small">
+                                Dimensions: {booth.size || '10x10 ft'}
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Expo Context */}
+                          {booth.expo && (
+                            <div className="p-2 px-3 bg-white rounded-3 border mb-3 small d-flex flex-wrap justify-content-between align-items-center gap-2">
+                              <div>
+                                <span className="text-muted">Expo Event: </span>
+                                <strong className="text-navy">{booth.expo.title}</strong>
+                              </div>
+                              <div className="text-muted">
+                                <i className="bi bi-calendar-event me-1 text-orange"></i>
+                                {formatExpoDate(booth.expo.date)} • {booth.expo.location}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Showcase & Staff Preview */}
+                          <div className="row g-3 mb-3">
+                            <div className="col-md-7">
+                              <div className="p-3 bg-white rounded-3 border h-100">
+                                <div className="small text-uppercase fw-bold text-muted mb-1" style={{ fontSize: '11px' }}>
+                                  Showcase Offerings & Products
+                                </div>
+                                <p className="small text-secondary mb-0" style={{ whiteSpace: 'pre-wrap' }}>
+                                  {booth.showcaseDetails || 'No showcase information added yet. Describe your products or equipment here.'}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="col-md-5">
+                              <div className="p-3 bg-white rounded-3 border h-100">
+                                <div className="small text-uppercase fw-bold text-muted mb-1" style={{ fontSize: '11px' }}>
+                                  On-Site Attendants & Contact
+                                </div>
+                                <p className="small text-secondary mb-0">
+                                  {booth.staffInfo ? (
+                                    <span><i className="bi bi-person-badge text-orange me-1"></i>{booth.staffInfo}</span>
+                                  ) : (
+                                    'No booth managers assigned yet.'
+                                  )}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Actions */}
+                          <div className="d-flex flex-wrap gap-2 justify-content-end">
+                            <Link to="/floor-plan" className="btn btn-outline-navy btn-sm">
+                              <i className="bi bi-geo me-1"></i> View on Floor Plan
+                            </Link>
+                            <button
+                              type="button"
+                              onClick={() => handleOpenBoothModal(booth)}
+                              className="btn btn-navy text-white btn-sm"
+                            >
+                              <i className="bi bi-pencil-square me-1"></i> Update Showcase & Staff
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-5 bg-light rounded-4">
+                    <i className="bi bi-grid-3x3-gap fs-1 text-muted mb-2 d-block"></i>
+                    <h6 className="fw-bold text-navy">No Reserved Stalls Yet</h6>
+                    <p className="text-muted small mb-3">
+                      Explore the interactive floor plan to select and reserve prime exhibition spaces for your brand.
+                    </p>
+                    <Link to="/floor-plan" className="btn btn-orange text-white btn-sm px-4">
+                      <i className="bi bi-compass me-1"></i> Open Floor Plan & Book a Stall
+                    </Link>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Applications Tab */}
             {activeTab === 'applications' && (currentUser?.role === 'exhibitor' || canManageExpos) && (
               <div className="card border-0 shadow-sm rounded-4 p-4 bg-white">
                 <h4 className="fw-bold text-navy mb-1">
@@ -931,6 +1169,7 @@ function Dashboard() {
               </div>
             )}
 
+            {/* Messages Tab */}
             {activeTab === 'messages' && (
               <div className="card border-0 shadow-sm rounded-4 p-4 bg-white">
                 <div className="d-flex justify-content-between align-items-center mb-3">
@@ -1028,6 +1267,7 @@ function Dashboard() {
               </div>
             )}
 
+            {/* Support Requests / Feedback Tab */}
             {activeTab === 'feedback' && (
               <div className="card border-0 shadow-sm rounded-4 p-4 bg-white">
                 <div className="mb-3">
@@ -1095,26 +1335,57 @@ function Dashboard() {
             {/* My Bookings Tab */}
             {activeTab === 'bookings' && (
               <div className="card border-0 shadow-sm rounded-4 p-4 bg-white">
-                <h5 className="fw-bold text-navy mb-3">My Booked Sessions & Stalls</h5>
-                <div className="alert alert-info small" role="alert">
-                  <i className="bi bi-info-circle-fill me-2"></i>
-                  Your reservations are synchronized with the convention registration desk.
-                </div>
-                <div className="list-group list-group-flush">
-                  <div className="list-group-item px-0 py-3 d-flex justify-content-between align-items-center">
-                    <div>
-                      <h6 className="fw-bold text-navy mb-1">Global AI & Robotics Summit 2026</h6>
-                      <p className="text-muted small mb-0">
-                        <i className="bi bi-geo-alt me-1 text-danger"></i>Silicon Pavilion, Hall A • Booth #A-101
-                      </p>
+                <h5 className="fw-bold text-navy mb-2">My Booked Sessions & Stalls</h5>
+                <p className="text-muted small mb-3">
+                  Your reservations synchronized with the convention registration desk.
+                </p>
+
+                {/* Show actual reserved stalls if any exist */}
+                {myBooths.length > 0 && (
+                  <div className="mb-4">
+                    <h6 className="fw-bold text-navy mb-2">
+                      <i className="bi bi-grid-3x3-gap text-orange me-2"></i>Reserved Exhibition Stalls ({myBooths.length})
+                    </h6>
+                    <div className="list-group mb-3">
+                      {myBooths.map((booth) => (
+                        <div key={booth._id} className="list-group-item p-3 d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2">
+                          <div>
+                            <div className="d-flex align-items-center gap-2">
+                              <span className="fw-bold text-navy">Booth #{booth.boothNumber}</span>
+                              <span className="badge bg-navy text-white small">{booth.hall || 'Hall A'}</span>
+                              <span className="badge bg-success small">{booth.status}</span>
+                            </div>
+                            <div className="text-muted small mt-1">
+                              <i className="bi bi-calendar-event me-1 text-orange"></i>
+                              {booth.expo?.title || 'Expo Event'} • <i className="bi bi-geo-alt me-1 text-danger"></i>{booth.location}
+                            </div>
+                            {booth.showcaseDetails && (
+                              <div className="text-secondary small mt-1 text-truncate" style={{ maxWidth: '450px' }}>
+                                Showcase: {booth.showcaseDetails}
+                              </div>
+                            )}
+                          </div>
+                          <div className="d-flex align-items-center gap-2">
+                            <span className="fw-bold text-orange">${Number(booth.price || 1200).toLocaleString()}</span>
+                            <Link to="/floor-plan" className="btn btn-outline-navy btn-sm">
+                              View Stall
+                            </Link>
+                          </div>
+                        </div>
+                      ))}
                     </div>
-                    <span className="badge bg-success">Confirmed</span>
                   </div>
-                  <div className="list-group-item px-0 py-3 d-flex justify-content-between align-items-center">
+                )}
+
+                <h6 className="fw-bold text-navy mb-2">
+                  <i className="bi bi-calendar-check text-primary me-2"></i>Convention Sessions & Passes
+                </h6>
+                <div className="list-group list-group-flush border rounded-3 p-2 bg-light">
+                  <div className="list-group-item bg-transparent px-2 py-3 d-flex justify-content-between align-items-center">
                     <div>
-                      <h6 className="fw-bold text-navy mb-1">Keynote: Future of Autonomous Mobility</h6>
+                      <h6 className="fw-bold text-navy mb-1">Keynote: Future of Autonomous Mobility & AI</h6>
                       <p className="text-muted small mb-0">
-                        <i className="bi bi-clock me-1 text-orange"></i>Day 1 • 10:00 AM - 11:30 AM
+                        <i className="bi bi-clock me-1 text-orange"></i>Day 1 • 10:00 AM - 11:30 AM • Main Auditorium
                       </p>
                     </div>
                     <span className="badge bg-primary">Seat Reserved</span>
@@ -1150,6 +1421,115 @@ function Dashboard() {
           </div>
         </div>
       </div>
+
+      {/* Exhibitor Stall Details Update Modal */}
+      {boothModalOpen && editingBooth && (
+        <div
+          className="modal fade show d-block"
+          style={{ backgroundColor: 'rgba(15, 34, 61, 0.55)' }}
+          tabIndex="-1"
+          role="dialog"
+        >
+          <div className="modal-dialog modal-dialog-centered" role="document">
+            <div className="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+              <div className="modal-header bg-navy text-white">
+                <h5 className="modal-title fw-bold">
+                  <i className="bi bi-pencil-square text-orange me-2"></i>
+                  Update Booth #{editingBooth.boothNumber} Details
+                </h5>
+                <button
+                  type="button"
+                  className="btn-close btn-close-white"
+                  onClick={() => setBoothModalOpen(false)}
+                  disabled={boothEditSaving}
+                ></button>
+              </div>
+
+              <form onSubmit={handleSaveBoothDetails}>
+                <div className="modal-body p-4">
+                  {boothNotice && (
+                    <div className={`alert alert-${boothNotice.type} small`} role="alert">
+                      {boothNotice.text}
+                    </div>
+                  )}
+
+                  <div className="p-3 bg-light rounded-3 mb-3 border small">
+                    <div className="d-flex justify-content-between mb-1">
+                      <span className="text-muted">Sector / Hall:</span>
+                      <span className="fw-bold text-navy">{editingBooth.hall || 'Hall A'}</span>
+                    </div>
+                    <div className="d-flex justify-content-between mb-1">
+                      <span className="text-muted">Footprint Size:</span>
+                      <span className="fw-bold text-navy">{editingBooth.size || '10x10 ft'}</span>
+                    </div>
+                    <div className="d-flex justify-content-between">
+                      <span className="text-muted">Tariff:</span>
+                      <span className="fw-bold text-orange">${Number(editingBooth.price || 1200).toLocaleString()}</span>
+                    </div>
+                  </div>
+
+                  <div className="mb-3">
+                    <label className="form-label small fw-semibold text-navy">
+                      Showcase Offerings & Products
+                    </label>
+                    <textarea
+                      className="form-control"
+                      rows="4"
+                      maxLength={1000}
+                      placeholder="Describe the technologies, hardware, or live demos attendees can see at your booth..."
+                      value={boothEditForm.showcaseDetails}
+                      onChange={(e) => setBoothEditForm({ ...boothEditForm, showcaseDetails: e.target.value })}
+                    ></textarea>
+                    <div className="form-text small">Max 1000 characters. Visible on the interactive floor plan.</div>
+                  </div>
+
+                  <div className="mb-2">
+                    <label className="form-label small fw-semibold text-navy">
+                      On-Site Attendants & Contact
+                    </label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      maxLength={500}
+                      placeholder="e.g. Elena Rostova (Lead Manager) - 03001234567"
+                      value={boothEditForm.staffInfo}
+                      onChange={(e) => setBoothEditForm({ ...boothEditForm, staffInfo: e.target.value })}
+                    />
+                    <div className="form-text small">Key representatives attending the stall.</div>
+                  </div>
+                </div>
+
+                <div className="modal-footer bg-light">
+                  <button
+                    type="button"
+                    className="btn btn-outline-secondary btn-sm"
+                    onClick={() => setBoothModalOpen(false)}
+                    disabled={boothEditSaving}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="btn btn-orange text-white btn-sm px-4"
+                    disabled={boothEditSaving}
+                  >
+                    {boothEditSaving ? (
+                      <>
+                        <span className="spinner-border spinner-border-sm me-2" role="status"></span>
+                        Saving...
+                      </>
+                    ) : (
+                      <>
+                        <i className="bi bi-check-circle me-1"></i> Save Stall Details
+                      </>
+                    )}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Add / Edit Expo Modal */}
       {expoModalOpen && (

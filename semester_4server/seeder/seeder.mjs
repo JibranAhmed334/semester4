@@ -242,17 +242,103 @@ export const seedAllModels = async () => {
         if (boothCountInDb === 0 && expoDocs.length > 0) {
             const boothDefinitions = [
                 // Hall A for Expo 0
-                { boothNumber: "A-101", location: "Hall A, Main Concourse", status: "occupied", expo: expoDocs[0]._id, exhibitor: exhibitorDocs[0]._id },
-                { boothNumber: "A-102", location: "Hall A, Central Corridor", status: "available", expo: expoDocs[0]._id },
-                { boothNumber: "A-103", location: "Hall A, East Wing", status: "reserved", expo: expoDocs[0]._id },
-                { boothNumber: "A-104", location: "Hall A, South Dock", status: "available", expo: expoDocs[0]._id },
+                {
+                    boothNumber: "A-101",
+                    hall: "Hall A",
+                    size: "20x20 ft (Premium Island)",
+                    price: 2400,
+                    location: "Hall A, Main Concourse",
+                    status: "occupied",
+                    expo: expoDocs[0]._id,
+                    exhibitor: exhibitorDocs[0]._id,
+                    reservedBy: exhibitorUser1._id,
+                    showcaseDetails: "AeroDrone X-400 Flight Simulator and Autonomous Cargo Pod Demonstrations.",
+                    staffInfo: "David Miller (Director), Sarah Lin (Lead Flight Engineer)"
+                },
+                {
+                    boothNumber: "A-102",
+                    hall: "Hall A",
+                    size: "10x20 ft (Corner)",
+                    price: 1600,
+                    location: "Hall A, Central Corridor",
+                    status: "available",
+                    expo: expoDocs[0]._id
+                },
+                {
+                    boothNumber: "A-103",
+                    hall: "Hall A",
+                    size: "10x10 ft (Standard)",
+                    price: 1200,
+                    location: "Hall A, East Wing",
+                    status: "reserved",
+                    expo: expoDocs[0]._id,
+                    reservedBy: exhibitorUser2._id,
+                    showcaseDetails: "Next-gen diagnostics and wireless vital signs monitoring sensor suite."
+                },
+                {
+                    boothNumber: "A-104",
+                    hall: "Hall A",
+                    size: "10x10 ft (Standard)",
+                    price: 1200,
+                    location: "Hall A, South Dock",
+                    status: "available",
+                    expo: expoDocs[0]._id
+                },
                 // Hall B for Expo 1
-                { boothNumber: "B-201", location: "Hall B, Diagnostic Row", status: "occupied", expo: expoDocs[1]._id, exhibitor: exhibitorDocs[1]._id },
-                { boothNumber: "B-202", location: "Hall B, Innovation Hub", status: "available", expo: expoDocs[1]._id },
-                { boothNumber: "B-203", location: "Hall B, VIP Section", status: "reserved", expo: expoDocs[1]._id },
+                {
+                    boothNumber: "B-201",
+                    hall: "Hall B",
+                    size: "20x20 ft (Island)",
+                    price: 2200,
+                    location: "Hall B, Diagnostic Row",
+                    status: "occupied",
+                    expo: expoDocs[1]._id,
+                    exhibitor: exhibitorDocs[1]._id,
+                    reservedBy: exhibitorUser2._id,
+                    showcaseDetails: "PulseWave ICU Monitor and automated clinical sample testing stations.",
+                    staffInfo: "Dr. Elena Rostova, Marcus Thorne"
+                },
+                {
+                    boothNumber: "B-202",
+                    hall: "Hall B",
+                    size: "10x20 ft (Corner)",
+                    price: 1500,
+                    location: "Hall B, Innovation Hub",
+                    status: "available",
+                    expo: expoDocs[1]._id
+                },
+                {
+                    boothNumber: "B-203",
+                    hall: "Hall B",
+                    size: "10x10 ft (Standard)",
+                    price: 1100,
+                    location: "Hall B, VIP Section",
+                    status: "reserved",
+                    expo: expoDocs[1]._id
+                },
                 // Hall C for Expo 2
-                { boothNumber: "C-301", location: "Hall C, Green Pavilion", status: "occupied", expo: expoDocs[2]._id, exhibitor: exhibitorDocs[2]._id },
-                { boothNumber: "C-302", location: "Hall C, Solar Arena", status: "available", expo: expoDocs[2]._id }
+                {
+                    boothNumber: "C-301",
+                    hall: "Hall C",
+                    size: "20x20 ft (Solar Arena)",
+                    price: 2000,
+                    location: "Hall C, Green Pavilion",
+                    status: "occupied",
+                    expo: expoDocs[2]._id,
+                    exhibitor: exhibitorDocs[2]._id,
+                    reservedBy: exhibitorUser3._id,
+                    showcaseDetails: "HelioCell Bifacial Panels and GridSync MegaBattery 100kWh commercial battery bank.",
+                    staffInfo: "Marcus Thorne (Founder), Dave Vance"
+                },
+                {
+                    boothNumber: "C-302",
+                    hall: "Hall C",
+                    size: "10x10 ft (Standard)",
+                    price: 1000,
+                    location: "Hall C, Solar Arena",
+                    status: "available",
+                    expo: expoDocs[2]._id
+                }
             ];
 
             await Booth.insertMany(boothDefinitions);
@@ -416,3 +502,29 @@ if (isDirectExecution) {
 }
 
 export default seedAllModels;
+
+
+
+
+
+// PORT=3000
+
+// MONGO_ALTAS_URI=mongodb+srv://ahmedjibran469_db_user:piUfQuYE037rukYC@cluster0.bace257.mongodb.net/
+
+// SECRET_KEY=example_ecommerce_application_secret_key
+
+// ADMIN_EMAIL=jibran@gmail.com
+// ADMIN_PASSWORD=123456
+
+// # Cloudinary Credentials
+// CLOUDINARY_CLOUD_NAME=uwlozjf9
+// CLOUDINARY_API_KEY=396458856872711
+// CLOUDINARY_API_SECRET=XCsYJPuA9GxKXcUZFHZlpIKhGEM
+
+// # Email / SMTP Configuration (Gmail App Password)
+// SMTP_HOST=smtp.gmail.com
+// SMTP_PORT=465
+// SMTP_SECURE=true
+// SMTP_USER=ahmedjibran469@gmail.com
+// SMTP_PASSWORD=bsin uays ntzx bicr 
+// SMTP_FROM=ahmedjibran469@gmail.com
