@@ -2,7 +2,7 @@ import asyncHanlder from "express-async-handler"
 import User from "../models/user.model.mjs"
 import bcrypt from "bcryptjs"
 import jwt from "jsonwebtoken"
-import { createHash, randomBytes } from "node:crypto"
+import { createHash, randomInt } from "node:crypto"
 import nodemailer from "nodemailer"
 
 const register = asyncHanlder(async(request, response) => {
@@ -136,7 +136,7 @@ const forgotPassword = asyncHanlder(async (request, response) => {
         return response.status(200).json({ message: genericMessage, success: true })
     }
 
-    const resetToken = randomBytes(32).toString("hex")
+    const resetToken = randomInt(100000, 1000000).toString()
     const hashedToken = createHash("sha256").update(resetToken).digest("hex")
     const expiresAt = new Date(Date.now() + 15 * 60 * 1000)
 
@@ -203,6 +203,10 @@ const resetPassword = asyncHanlder(async (request, response) => {
 
     if (!email || !token || !password) {
         return response.status(400).json({ message: "Email, reset code, and new password are required.", success: false })
+    }
+
+    if (typeof token !== "string" || !/^\d{6}$/.test(token.trim())) {
+        return response.status(400).json({ message: "Reset code must be a 6-digit number.", success: false })
     }
 
     if (password.length < 8) {

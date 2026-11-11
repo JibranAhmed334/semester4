@@ -59,6 +59,11 @@ function ForgotPassword() {
       return;
     }
 
+    if (!/^\d{6}$/.test(resetData.token.trim())) {
+      setStatusMessage({ type: 'danger', text: 'Reset code must be a 6-digit number.' });
+      return;
+    }
+
     if (resetData.password.length < 8) {
       setStatusMessage({ type: 'danger', text: 'Password must be at least 8 characters long.' });
       return;
@@ -212,10 +217,13 @@ function ForgotPassword() {
                       </span>
                       <input
                         type="text"
+                        inputMode="numeric"
+                        autoComplete="one-time-code"
+                        maxLength={6}
                         className="form-control"
-                        placeholder="e.g. A3F89C"
+                        placeholder="e.g. 123456"
                         value={resetData.token}
-                        onChange={(e) => setResetData({ ...resetData, token: e.target.value })}
+                        onChange={(e) => setResetData({ ...resetData, token: e.target.value.replace(/\D/g, '') })}
                         required
                       />
                     </div>

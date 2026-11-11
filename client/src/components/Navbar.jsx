@@ -5,6 +5,7 @@ import axios from 'axios';
 function Navbar() {
   const [currentUser, setCurrentUser] = useState(null);
   const [isNavCollapsed, setIsNavCollapsed] = useState(true);
+  const [openDropdown, setOpenDropdown] = useState('');
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -24,6 +25,7 @@ function Navbar() {
     }
     // Collapse mobile menu on page change
     setIsNavCollapsed(true);
+    setOpenDropdown('');
   }, [location]);
 
   const handleLogout = async () => {
@@ -43,96 +45,113 @@ function Navbar() {
     setIsNavCollapsed(!isNavCollapsed);
   };
 
+  if (['/login', '/register'].includes(location.pathname)) return null;
+
+  const closeMenus = () => {
+    setIsNavCollapsed(true);
+    setOpenDropdown('');
+  };
+
+  const toggleDropdown = (name) => {
+    setOpenDropdown((current) => current === name ? '' : name);
+  };
+
   return (
-    <nav className="navbar navbar-expand-lg navbar-dark bg-navy shadow-sm sticky-top py-2">
+    <nav className="navbar navbar-expand-lg navbar-dark site-navbar sticky-top">
       <div className="container">
-        {/* Brand Logo */}
-        <Link className="navbar-brand d-flex align-items-center gap-2 fw-bold fs-4" to="/">
-          <span className="brand-icon-box bg-orange text-white rounded d-inline-flex align-items-center justify-content-center">
+        <Link className="navbar-brand d-flex align-items-center gap-2 fw-bold" to="/" onClick={closeMenus}>
+          <span className="brand-icon-box site-brand-icon text-white rounded-3 d-inline-flex align-items-center justify-content-center">
             <i className="bi bi-calendar-check-fill"></i>
           </span>
-          <span>Event<span className="text-orange">Sphere</span></span>
+          <span className="site-brand-name">Event<span>Sphere</span></span>
         </Link>
 
-        {/* Mobile Toggle Button */}
         <button
-          className="navbar-toggler border-0"
+          className="navbar-toggler site-nav-toggler"
           type="button"
           onClick={toggleNav}
           aria-expanded={!isNavCollapsed}
           aria-label="Toggle navigation"
+          aria-controls="navbarContent"
         >
-          <span className="navbar-toggler-icon"></span>
+          <i className={`bi ${isNavCollapsed ? 'bi-list' : 'bi-x-lg'}`} aria-hidden="true"></i>
         </button>
 
-        {/* Nav Links */}
         <div className={`collapse navbar-collapse ${!isNavCollapsed ? 'show' : ''}`} id="navbarContent">
-          <ul className="navbar-nav me-auto mb-2 mb-lg-0 ms-lg-3 gap-lg-1">
+          <ul className="navbar-nav me-auto my-3 my-lg-0 ms-lg-4 gap-lg-1">
             <li className="nav-item">
-              <NavLink className={({ isActive }) => `nav-link ${isActive ? 'active-link' : ''}`} to="/">
+              <NavLink onClick={closeMenus} className={({ isActive }) => `nav-link site-nav-link ${isActive ? 'active-link' : ''}`} to="/">
                 Home
               </NavLink>
             </li>
             <li className="nav-item">
-              <NavLink className={({ isActive }) => `nav-link ${isActive ? 'active-link' : ''}`} to="/expos">
+              <NavLink onClick={closeMenus} className={({ isActive }) => `nav-link site-nav-link ${isActive ? 'active-link' : ''}`} to="/expos">
                 Expos
               </NavLink>
             </li>
-            <li className="nav-item">
-              <NavLink className={({ isActive }) => `nav-link ${isActive ? 'active-link' : ''}`} to="/exhibitors">
-                Exhibitors
-              </NavLink>
+            <li className={`nav-item dropdown site-dropdown ${openDropdown === 'visit' ? 'show' : ''}`}>
+              <button
+                type="button"
+                className="nav-link site-nav-link dropdown-toggle"
+                aria-expanded={openDropdown === 'visit'}
+                onClick={() => toggleDropdown('visit')}
+              >
+                Plan your visit
+              </button>
+              <ul className={`dropdown-menu site-dropdown-menu ${openDropdown === 'visit' ? 'show' : ''}`}>
+                <li><NavLink onClick={closeMenus} className="dropdown-item" to="/schedule"><i className="bi bi-calendar3"></i> Event schedule</NavLink></li>
+                <li><NavLink onClick={closeMenus} className="dropdown-item" to="/floor-plan"><i className="bi bi-map"></i> Booth floor plan</NavLink></li>
+                <li><NavLink onClick={closeMenus} className="dropdown-item" to="/exhibitors"><i className="bi bi-shop"></i> Exhibitors</NavLink></li>
+              </ul>
             </li>
-            <li className="nav-item">
-              <NavLink className={({ isActive }) => `nav-link ${isActive ? 'active-link' : ''}`} to="/schedule">
-                Schedule
-              </NavLink>
-            </li>
-            <li className="nav-item">
-              <NavLink className={({ isActive }) => `nav-link ${isActive ? 'active-link' : ''}`} to="/floor-plan">
-                Floor Plan
-              </NavLink>
-            </li>
-            <li className="nav-item">
-              <NavLink className={({ isActive }) => `nav-link ${isActive ? 'active-link' : ''}`} to="/about">
-                About Us
-              </NavLink>
-            </li>
-            <li className="nav-item">
-              <NavLink className={({ isActive }) => `nav-link ${isActive ? 'active-link' : ''}`} to="/contact">
-                Contact
-              </NavLink>
+            <li className={`nav-item dropdown site-dropdown ${openDropdown === 'about' ? 'show' : ''}`}>
+              <button
+                type="button"
+                className="nav-link site-nav-link dropdown-toggle"
+                aria-expanded={openDropdown === 'about'}
+                onClick={() => toggleDropdown('about')}
+              >
+                About
+              </button>
+              <ul className={`dropdown-menu site-dropdown-menu ${openDropdown === 'about' ? 'show' : ''}`}>
+                <li><NavLink onClick={closeMenus} className="dropdown-item" to="/about"><i className="bi bi-info-circle"></i> About EventSphere</NavLink></li>
+                <li><NavLink onClick={closeMenus} className="dropdown-item" to="/contact"><i className="bi bi-chat-dots"></i> Contact us</NavLink></li>
+              </ul>
             </li>
           </ul>
 
-          {/* User Auth Section */}
-          <div className="d-flex align-items-center gap-2 mt-3 mt-lg-0">
+          <div className="d-flex align-items-center gap-2 site-auth-actions">
             {currentUser ? (
-              <div className="d-flex align-items-center gap-2 flex-wrap">
-                <Link to="/dashboard" className="btn btn-outline-light btn-sm d-flex align-items-center gap-1">
-                  <i className="bi bi-speedometer2"></i>
-                  <span>Dashboard</span>
-                </Link>
-                <div className="text-light small d-none d-md-block px-2 py-1 bg-navy-light rounded border border-secondary border-opacity-25">
-                  <span className="fw-semibold text-capitalize">{currentUser.name}</span>{' '}
-                  <span className="badge bg-orange text-uppercase ms-1" style={{ fontSize: '0.65rem' }}>
-                    {currentUser.role}
+              <div className={`dropdown site-dropdown ${openDropdown === 'account' ? 'show' : ''}`}>
+                <button
+                  type="button"
+                  className="btn site-account-button dropdown-toggle d-flex align-items-center gap-2"
+                  aria-expanded={openDropdown === 'account'}
+                  onClick={() => toggleDropdown('account')}
+                >
+                  <span className="site-avatar">{(currentUser.name || 'U').charAt(0).toUpperCase()}</span>
+                  <span className="text-start">
+                    <span className="d-block site-account-name">{currentUser.name}</span>
+                    <span className="d-block site-account-role">{currentUser.role}</span>
                   </span>
-                </div>
-                <button onClick={handleLogout} className="btn btn-danger btn-sm d-flex align-items-center gap-1">
-                  <i className="bi bi-box-arrow-right"></i>
-                  <span>Logout</span>
                 </button>
+                <ul className={`dropdown-menu dropdown-menu-end site-dropdown-menu site-account-menu ${openDropdown === 'account' ? 'show' : ''}`}>
+                  <li><Link onClick={closeMenus} className="dropdown-item" to="/dashboard"><i className="bi bi-speedometer2"></i> Dashboard</Link></li>
+                  <li><hr className="dropdown-divider" /></li>
+                  <li>
+                    <button onClick={() => { closeMenus(); handleLogout(); }} className="dropdown-item site-logout-item">
+                      <i className="bi bi-box-arrow-right"></i> Sign out
+                    </button>
+                  </li>
+                </ul>
               </div>
             ) : (
               <div className="d-flex align-items-center gap-2">
-                <Link to="/login" className="btn btn-outline-light btn-sm px-3">
-                  <i className="bi bi-box-arrow-in-right me-1"></i>
-                  Login
+                <Link onClick={closeMenus} to="/login" className="btn site-login-button">
+                  Sign in
                 </Link>
-                <Link to="/register" className="btn btn-orange btn-sm px-3 text-white">
-                  <i className="bi bi-person-plus me-1"></i>
-                  Register
+                <Link onClick={closeMenus} to="/register" className="btn site-register-button">
+                  Get started <i className="bi bi-arrow-up-right ms-1"></i>
                 </Link>
               </div>
             )}

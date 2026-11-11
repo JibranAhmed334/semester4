@@ -69,6 +69,10 @@ function Dashboard() {
   const [boothEditSaving, setBoothEditSaving] = useState(false);
   const [boothNotice, setBoothNotice] = useState(null);
 
+  // Bookmarks & Registrations State
+  const [myBookmarks, setMyBookmarks] = useState([]);
+  const [myRegistrations, setMyRegistrations] = useState([]);
+
   const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
   const canManageExpos = currentUser?.role === 'admin' || currentUser?.role === 'organizer';
   const canManageFeedback = canManageExpos;
@@ -90,12 +94,16 @@ function Dashboard() {
   }, [navigate]);
 
   useEffect(() => {
-    if (activeTab === 'expos' || activeTab === 'overview') {
+    if (activeTab === 'expos' || activeTab === 'overview' || activeTab === 'analytics') {
       fetchExpos();
       fetchCategories();
     }
     if (activeTab === 'my-booths' || activeTab === 'overview' || activeTab === 'bookings') {
       fetchMyBooths();
+    }
+    if (activeTab === 'bookings' || activeTab === 'overview') {
+      fetchMyBookmarks();
+      fetchMyRegistrations();
     }
   }, [activeTab]);
 
@@ -353,6 +361,24 @@ function Dashboard() {
       console.log('Notice: Could not load reserved booths:', err.message);
     } finally {
       setMyBoothsLoading(false);
+    }
+  };
+
+  const fetchMyBookmarks = async () => {
+    try {
+      const res = await axios.get(`${API_URL}/sessions/my-bookmarks`, getAuthConfig());
+      setMyBookmarks(res.data?.sessions || []);
+    } catch {
+      setMyBookmarks([]);
+    }
+  };
+
+  const fetchMyRegistrations = async () => {
+    try {
+      const res = await axios.get(`${API_URL}/registrations/my`, getAuthConfig());
+      setMyRegistrations(res.data?.registrations || []);
+    } catch {
+      setMyRegistrations([]);
     }
   };
 
@@ -621,6 +647,16 @@ function Dashboard() {
                     {currentUser?.role === 'exhibitor' ? 'My Expo Applications' : 'Exhibitor Applications'}
                   </button>
                 )}
+                {canManageExpos && (
+                  <button
+                    className={`nav-link text-start rounded-3 py-2 px-3 fw-medium ${
+                      activeTab === 'analytics' ? 'bg-navy text-white' : 'text-secondary btn-link text-decoration-none'
+                    }`}
+                    onClick={() => setActiveTab('analytics')}
+                  >
+                    <i className="bi bi-graph-up-arrow me-2"></i> Analytics & Reports
+                  </button>
+                )}
                 <button
                   className={`nav-link text-start rounded-3 py-2 px-3 fw-medium ${
                     activeTab === 'messages' ? 'bg-navy text-white' : 'text-secondary btn-link text-decoration-none'
@@ -688,7 +724,7 @@ function Dashboard() {
                   <div className="col-sm-6 col-md-3">
                     <div className="card border-0 shadow-sm rounded-4 p-3 bg-white text-center">
                       <div className="fs-3 fw-bold text-orange mb-1">
-                        {sampleDashboardStats.bookmarkedSessions}
+                        {myBookmarks.length}
                       </div>
                       <div className="text-muted small">Bookmarked Sessions</div>
                     </div>
@@ -696,17 +732,19 @@ function Dashboard() {
                   <div className="col-sm-6 col-md-3">
                     <div className="card border-0 shadow-sm rounded-4 p-3 bg-white text-center">
                       <div className="fs-3 fw-bold text-success mb-1">
-                        {currentUser?.role === 'exhibitor' ? myBooths.length : sampleDashboardStats.reservedBooths}
+                        {currentUser?.role === 'exhibitor' ? myBooths.length : myRegistrations.length}
                       </div>
-                      <div className="text-muted small">Reserved Stalls</div>
+                      <div className="text-muted small">
+                        {currentUser?.role === 'exhibitor' ? 'Reserved Stalls' : 'My Event Passes'}
+                      </div>
                     </div>
                   </div>
                   <div className="col-sm-6 col-md-3">
                     <div className="card border-0 shadow-sm rounded-4 p-3 bg-white text-center">
                       <div className="fs-3 fw-bold text-primary mb-1">
-                        {sampleDashboardStats.unreadMessages}
+                        {feedbackItems.length + conversations.length}
                       </div>
-                      <div className="text-muted small">Notifications</div>
+                      <div className="text-muted small">Messages & Support</div>
                     </div>
                   </div>
                 </div>
@@ -1377,20 +1415,66 @@ function Dashboard() {
                   </div>
                 )}
 
+                {/* Confirmed Expo Entry Passes */}
                 <h6 className="fw-bold text-navy mb-2">
-                  <i className="bi bi-calendar-check text-primary me-2"></i>Convention Sessions & Passes
+                  <i className="bi bi-ticket-perforated-fill text-orange me-2"></i>Confirmed Expo Admission Passes ({myRegistrations.length})
                 </h6>
-                <div className="list-group list-group-flush border rounded-3 p-2 bg-light">
-                  <div className="list-group-item bg-transparent px-2 py-3 d-flex justify-content-between align-items-center">
-                    <div>
-                      <h6 className="fw-bold text-navy mb-1">Keynote: Future of Autonomous Mobility & AI</h6>
-                      <p className="text-muted small mb-0">
-                        <i className="bi bi-clock me-1 text-orange"></i>Day 1 • 10:00 AM - 11:30 AM • Main Auditorium
-                      </p>
-                    </div>
-                    <span className="badge bg-primary">Seat Reserved</span>
+                {myRegistrations.length > 0 ? (
+                  <div className="list-group mb-4">
+                    {myRegistrations.map((reg) => (
+                      <div key={reg._id} className="list-group-item p-3 d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2">
+                        <div>
+                          <div className="d-flex align-items-center gap-2">
+                            <span className="fw-bold text-navy">{reg.expo?.title || 'Expo Event'}</span>
+                            <span className="badge bg-success small text-uppercase">Confirmed</span>
+                            <span className="badge bg-light text-navy border small">#ESP-{reg._id?.slice(-6).toUpperCase()}</span>
+                          </div>
+                          <div className="text-muted small mt-1">
+                            <i className="bi bi-calendar-event me-1 text-orange"></i>
+                            {formatExpoDate(reg.expo?.date)} • <i className="bi bi-geo-alt me-1 text-danger"></i>{reg.expo?.location || 'Main Venue'}
+                          </div>
+                        </div>
+                        <Link to={`/expos/${reg.expo?._id || ''}`} className="btn btn-outline-navy btn-sm">
+                          View Expo Pass
+                        </Link>
+                      </div>
+                    ))}
                   </div>
-                </div>
+                ) : (
+                  <div className="p-3 bg-light rounded-3 text-muted small mb-4">
+                    No expo entry passes registered yet. <Link to="/expos" className="text-orange fw-semibold">Browse Expos to get a free pass</Link>.
+                  </div>
+                )}
+
+                {/* Bookmarked Conference Sessions */}
+                <h6 className="fw-bold text-navy mb-2">
+                  <i className="bi bi-bookmark-star-fill text-primary me-2"></i>My Bookmarked Sessions & Agenda ({myBookmarks.length})
+                </h6>
+                {myBookmarks.length > 0 ? (
+                  <div className="list-group">
+                    {myBookmarks.map((session) => (
+                      <div key={session._id} className="list-group-item p-3 d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2">
+                        <div>
+                          <div className="d-flex align-items-center gap-2">
+                            <span className="fw-bold text-navy">{session.title}</span>
+                            <span className="badge bg-light text-navy border small">{session.sessionType || 'Keynote'}</span>
+                          </div>
+                          <div className="text-muted small mt-1">
+                            <i className="bi bi-clock me-1 text-orange"></i>
+                            {new Date(session.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} • <i className="bi bi-geo-alt me-1 text-danger"></i>{session.location} • <i className="bi bi-person me-1"></i>{session.speaker}
+                          </div>
+                        </div>
+                        <Link to="/schedule" className="btn btn-outline-navy btn-sm">
+                          View in Schedule
+                        </Link>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="p-3 bg-light rounded-3 text-muted small">
+                    No sessions saved to your personal agenda yet. <Link to="/schedule" className="text-orange fw-semibold">Explore Schedule</Link>.
+                  </div>
+                )}
               </div>
             )}
 

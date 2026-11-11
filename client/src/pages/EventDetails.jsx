@@ -1,17 +1,23 @@
 import { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { sampleExpos } from '../data/sampleData';
 import { mapExpoRecord } from '../data/expoHelpers';
+import { subscribeToLiveUpdates } from '../utils/realtime';
 
 function EventDetails() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const [eventData, setEventData] = useState(null);
   const [registered, setRegistered] = useState(false);
+  const [registerLoading, setRegisterLoading] = useState(false);
+  const [registrationNotice, setRegistrationNotice] = useState(null);
+  const [passDetails, setPassDetails] = useState(null);
   const [applicationStatus, setApplicationStatus] = useState('');
   const [applicationLoading, setApplicationLoading] = useState(false);
   const [applicationError, setApplicationError] = useState('');
   const [applicationDocuments, setApplicationDocuments] = useState('');
+  const [expoRefreshVersion, setExpoRefreshVersion] = useState(0);
   const currentUser = (() => {
     try {
       return JSON.parse(localStorage.getItem('user') || 'null');
@@ -50,12 +56,78 @@ function EventDetails() {
       .catch(() => {
         setEventData(sampleExpos[0]);
       });
-  }, [id, API_URL]);
+  }, [id, API_URL, expoRefreshVersion]);
+
+  useEffect(() => subscribeToLiveUpdates(API_URL, (update) => {
+    if (update.resource === 'expo' && update.expoId === id) {
+      if (update.action === 'deleted') {
+        navigate('/expos');
+      } else {
+        setExpoRefreshVersion((version) => version + 1);
+      }
+    }
+  }), [id, API_URL, navigate]);
+
+  const getAuthConfig = () => {
+    const token = localStorage.getItem('token');
+    return {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      withCredentials: true
+    };
+  };
+
+  useEffect(() => {
+    if (currentUser) {
+      axios
+        .get(`${API_URL}/registrations/my`, getAuthConfig())
+        .then((res) => {
+          const list = res.data?.registrations || [];
+          const matched = list.find((r) => String(r.expo?._id || r.expo) === id);
+          if (matched) {
+            setRegistered(true);
+            setPassDetails(matched);
+          }
+        })
+        .catch(() => {});
+    }
+  }, [id, currentUser, API_URL]);
 
   const event = eventData || sampleExpos[0];
 
-  const handleRegisterModal = () => {
-    setRegistered(true);
+  const handleAttendeeRegistration = async () => {
+    if (!currentUser) {
+      navigate('/login');
+      return;
+    }
+
+    const expoId = eventData?._id || id;
+    if (!expoId || !/^[a-f\d]{24}$/i.test(expoId)) {
+      setRegistrationNotice({ type: 'warning', text: 'Passes are available for published expo events.' });
+      return;
+    }
+
+    setRegisterLoading(true);
+    setRegistrationNotice(null);
+    try {
+      const response = await axios.post(
+        `${API_URL}/registrations`,
+        { expoId },
+        getAuthConfig()
+      );
+      setRegistered(true);
+      setPassDetails(response.data?.registration);
+      setRegistrationNotice({
+        type: 'success',
+        text: response.data?.message || 'Pass confirmed! You are registered for this expo.'
+      });
+    } catch (err) {
+      setRegistrationNotice({
+        type: 'danger',
+        text: err.response?.data?.message || 'Could not complete registration.'
+      });
+    } finally {
+      setRegisterLoading(false);
+    }
   };
 
   const handleExpoApplication = async () => {
@@ -112,11 +184,16 @@ function EventDetails() {
 
       {/* Main Content */}
       <div className="container py-4">
-        {registered && (
-          <div className="alert alert-success alert-dismissible fade show shadow-sm mb-4" role="alert">
-            <i className="bi bi-check-circle-fill me-2 fs-5"></i>
-            <strong>Demo Pass Confirmed!</strong> You have successfully registered your interest for {event.title}. Your mock confirmation ID is <strong>#ESP-{Math.floor(100000 + Math.random() * 900000)}</strong>.
-            <button type="button" className="btn-close" onClick={() => setRegistered(false)}></button>
+        {registrationNotice && (
+          <div className={`alert alert-${registrationNotice.type} alert-dismissible fade show shadow-sm mb-4`} role="alert">
+            <i className={`bi ${registrationNotice.type === 'success' ? 'bi-check-circle-fill' : 'bi-exclamation-triangle-fill'} me-2 fs-5`}></i>
+            <strong>{registrationNotice.text}</strong>
+            {passDetails && (
+              <span className="ms-2">
+                Your Badge ID is <strong>#ESP-{passDetails._id?.slice(-6).toUpperCase()}</strong>.
+              </span>
+            )}
+            <button type="button" className="btn-close" onClick={() => setRegistrationNotice(null)}></button>
           </div>
         )}
 
@@ -218,12 +295,28 @@ function EventDetails() {
                 </div>
               </div>
 
-              <button
-                onClick={handleRegisterModal}
-                className="btn btn-orange text-white w-100 py-2 mb-2 shadow-sm"
-              >
-                <i className="bi bi-ticket-perforated me-1"></i> Register for Free Pass
-              </button>
+              {registered ? (
+                <div className="alert alert-success small py-2 mb-2 text-center shadow-sm">
+                  <i className="bi bi-patch-check-fill text-success me-1"></i> Pass Confirmed (#ESP-{passDetails?._id?.slice(-6).toUpperCase() || 'REGISTERED'})
+                </div>
+              ) : (
+                <button
+                  onClick={handleAttendeeRegistration}
+                  disabled={registerLoading}
+                  className="btn btn-orange text-white w-100 py-2 mb-2 shadow-sm"
+                >
+                  {registerLoading ? (
+                    <>
+                      <span className="spinner-border spinner-border-sm me-1" role="status"></span>
+                      Confirming Pass...
+                    </>
+                  ) : (
+                    <>
+                      <i className="bi bi-ticket-perforated me-1"></i> Register for Free Pass
+                    </>
+                  )}
+                </button>
+              )}
 
               <Link to="/floor-plan" className="btn btn-outline-navy w-100 py-2 mb-3">
                 <i className="bi bi-shop me-1"></i> Book a Booth Space

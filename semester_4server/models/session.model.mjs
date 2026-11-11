@@ -21,6 +21,16 @@ const sessionSchema = new mongoose.Schema(
             required: true,
             trim: true
         },
+        speakerRole: {
+            type: String,
+            trim: true,
+            default: "Industry Specialist"
+        },
+        sessionType: {
+            type: String,
+            trim: true,
+            default: "Keynote"
+        },
         location: {
             type: String,
             required: true,

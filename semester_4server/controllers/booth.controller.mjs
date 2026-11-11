@@ -3,6 +3,7 @@ import mongoose from "mongoose";
 import Booth from "../models/booth.model.mjs";
 import Expo from "../models/expo.model.mjs";
 import Exhibitor from "../models/exhibitor.model.mjs";
+import { publishRealtimeUpdate } from "../utils/realtime.utils.mjs";
 
 const populateBooth = (query) => query
     .populate("expo", "title date location theme")
@@ -103,6 +104,7 @@ const reserveBooth = AsyncHandler(async (request, response) => {
     await booth.save();
 
     const populatedBooth = await populateBooth(Booth.findById(booth._id));
+    publishRealtimeUpdate("booth", booth.expo, "updated");
 
     return response.status(200).json({
         message: `Booth ${booth.boothNumber} reserved successfully for ${exhibitor.companyName}!`,
@@ -187,6 +189,7 @@ const updateBoothDetails = AsyncHandler(async (request, response) => {
     await booth.save();
 
     const populatedBooth = await populateBooth(Booth.findById(booth._id));
+    publishRealtimeUpdate("booth", booth.expo, "updated");
 
     return response.status(200).json({
         message: `Booth ${booth.boothNumber} updated successfully.`,
@@ -244,6 +247,7 @@ const createBooth = AsyncHandler(async (request, response) => {
     });
 
     const populatedBooth = await populateBooth(Booth.findById(booth._id));
+    publishRealtimeUpdate("booth", booth.expo, "created");
 
     return response.status(201).json({
         message: `Booth ${booth.boothNumber} created successfully.`,
@@ -263,6 +267,8 @@ const deleteBooth = AsyncHandler(async (request, response) => {
         return response.status(404).json({ message: "Booth was not found.", success: false });
     }
 
+    publishRealtimeUpdate("booth", booth.expo, "deleted");
+
     return response.status(200).json({
         message: `Booth ${booth.boothNumber} deleted successfully.`,
         success: true
@@ -278,4 +284,3 @@ export {
     createBooth,
     deleteBooth
 };
-

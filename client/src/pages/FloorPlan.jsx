@@ -1,12 +1,15 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
+import { subscribeToLiveUpdates } from '../utils/realtime';
 
 function FloorPlan() {
   const [expos, setExpos] = useState([]);
   const [selectedExpoId, setSelectedExpoId] = useState('');
   const [booths, setBooths] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [expoRefreshVersion, setExpoRefreshVersion] = useState(0);
+  const [boothRefreshVersion, setBoothRefreshVersion] = useState(0);
   const [selectedHall, setSelectedHall] = useState('All');
   const [selectedStatus, setSelectedStatus] = useState('All');
   const [activeBooth, setActiveBooth] = useState(null);
@@ -52,7 +55,9 @@ function FloorPlan() {
         const list = response.data?.expos || response.data?.products || [];
         if (!cancelled && Array.isArray(list) && list.length > 0) {
           setExpos(list);
-          setSelectedExpoId(list[0]._id);
+          setSelectedExpoId((current) =>
+            list.some((expo) => expo._id === current) ? current : list[0]._id
+          );
         }
       } catch (err) {
         console.log('Notice: Could not load expos for floor plan:', err.message);
@@ -63,7 +68,7 @@ function FloorPlan() {
     return () => {
       cancelled = true;
     };
-  }, [API_URL]);
+  }, [API_URL, expoRefreshVersion]);
 
   // 2. Fetch Booths whenever selectedExpoId changes
   useEffect(() => {
@@ -107,7 +112,16 @@ function FloorPlan() {
     return () => {
       cancelled = true;
     };
-  }, [selectedExpoId, API_URL]);
+  }, [selectedExpoId, API_URL, boothRefreshVersion, expoRefreshVersion]);
+
+  useEffect(() => subscribeToLiveUpdates(API_URL, ({ resource }) => {
+    if (resource === 'expo') {
+      setExpoRefreshVersion((version) => version + 1);
+      setBoothRefreshVersion((version) => version + 1);
+    } else if (resource === 'booth') {
+      setBoothRefreshVersion((version) => version + 1);
+    }
+  }), [API_URL]);
 
   // Filter booths by Hall and Status
   const filteredBooths = useMemo(() => {

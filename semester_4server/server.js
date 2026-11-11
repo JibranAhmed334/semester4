@@ -11,11 +11,14 @@ import exhibitorRouter from "./routes/exhibitor.route.mjs";
 import boothRouter from "./routes/booth.route.mjs";
 import feedbackRouter from "./routes/feedback.route.mjs";
 import messageRouter from "./routes/message.route.mjs";
+import sessionRouter from "./routes/session.route.mjs";
+import registrationRouter from "./routes/registration.route.mjs";
 import uploads, { uploadDirectory } from "./midlleware/uplods.mjs";
 import varifytoken from "./midlleware/varifymiddleware.mjs";
 import checkRole from "./midlleware/RoleMiddleware.mjs";
 import multer from "multer";
 import seedAllModels from "./seeder/seeder.mjs";
+import { addRealtimeClient } from "./utils/realtime.utils.mjs";
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -49,6 +52,23 @@ app.use(cookieParser());
 
 app.use("/uploads", express.static(uploadDirectory));
 
+app.get("/api/updates", (request, response) => {
+    response.set({
+        "Content-Type": "text/event-stream",
+        "Cache-Control": "no-cache",
+        Connection: "keep-alive"
+    });
+    response.flushHeaders();
+    response.write("data: {\"resource\":\"connected\"}\n\n");
+    addRealtimeClient(response);
+
+    const heartbeat = setInterval(() => {
+        response.write(": keep-alive\n\n");
+    }, 25000);
+
+    response.on("close", () => clearInterval(heartbeat));
+});
+
 app.post("/uploads", varifytoken, checkRole("admin"), uploads.single("file"), (request, response) => {
     if (!request.file) {
         return response.status(400).json({ message: "Please select an image file.", success: false });
@@ -68,6 +88,8 @@ app.use("/api/booths", boothRouter);
 app.use("/api/products", expoRouter);
 app.use("/api/feedback", feedbackRouter);
 app.use("/api/messages", messageRouter);
+app.use("/api/sessions", sessionRouter);
+app.use("/api/registrations", registrationRouter);
 
 app.use((error, _request, response, _next) => {
     console.error("API request failed:", error.message);

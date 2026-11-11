@@ -5,6 +5,7 @@ import Category from "../models/category.model.mjs";
 import Expo from "../models/expo.model.mjs";
 import delete_from_cloudinary from "../utils/cloudinary.delete.utils .mjs";
 import upload_on_cloudinary from "../utils/cloudinary.utils.mjs";
+import { publishRealtimeUpdate } from "../utils/realtime.utils.mjs";
 
 const removeUploadedFile = async (filePath) => {
     try {
@@ -125,6 +126,7 @@ const createExpo = AsyncHandler(async (request, response) => {
             organizer: request.user._id
         });
         expo = await populateExpo(Expo.findById(expo._id));
+        publishRealtimeUpdate("expo", expo._id, "created");
 
         return response.status(201).json({
             message: "Expo created successfully.",
@@ -250,6 +252,7 @@ const updateExpo = AsyncHandler(async (request, response) => {
         }
 
         const populated = await populateExpo(Expo.findById(updatedExpo._id));
+        publishRealtimeUpdate("expo", populated._id, "updated");
 
         return response.status(200).json({
             message: "Expo updated successfully.",
@@ -284,6 +287,7 @@ const deleteExpo = AsyncHandler(async (request, response) => {
     }
 
     await Expo.findByIdAndDelete(id);
+    publishRealtimeUpdate("expo", id, "deleted");
 
     let warning;
     if (expo.bannerPublicId) {
